@@ -1,0 +1,19 @@
+.hover-bg-white:hover{
+    background-color: white !important;
+}
+
+.forgot-container{
+    width: 470px;
+}
+
+.main-container{
+    padding-bottom: 80px;
+    min-width: 490px;
+}
+
+.msg{
+    font-weight: 500px;
+    color: #012970;
+    font-family: "Poppins", sans-serif;
+}
+
