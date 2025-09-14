@@ -7,23 +7,14 @@ var quizzesTable;
 var currentQuizEditId = null;
 
 $(document).ready(function() {
-    console.log('Document ready - initializing quizzes...');
     // Prevent multiple initializations
     if (window.quizzesTableInitialized) {
-        console.log('Quizzes already initialized, skipping...');
         return;
     }
     
     initializeQuizzesTable();
     setupModalEvents();
-    
-    // Load lessons immediately to ensure they're available
-    console.log('Loading lessons on document ready...');
-    loadLessons();
-    
     window.quizzesTableInitialized = true;
-    console.log('Quizzes initialization complete');
-    // Note: loadLessons() will also be called when modal opens
 });
 
 /**
@@ -51,66 +42,127 @@ function initializeQuizzesTable() {
                 });
             }
         },
-        "columns": (function() {
-            // Define columns based on user role
-            if (window.isStudent) {
-                // Student view - no ID column, no Actions column
-                return [
-                    { "data": "title", "width": "30%" },
-                    { "data": "lesson_title", "width": "25%" },
-                    { "data": "max_score", "width": "10%" },
-                    { "data": "time_limit_minutes", "width": "15%" },
-                    { "data": "created_at", "width": "20%" }
-                ];
-            } else {
-                // Admin/Teacher view - full columns
-                return [
-                    { "data": "id", "width": "5%" },
-                    { "data": "title", "width": "25%" },
-                    { "data": "lesson_title", "width": "20%" },
-                    { "data": "max_score", "width": "10%" },
-                    { "data": "time_limit_minutes", "width": "15%" },
-                    { "data": "created_at", "width": "10%" },
-                    { "data": "status", "orderable": false, "width": "10%" },
-                    { 
-                        "data": "actions", 
-                        "orderable": false,
-                        "width": "15%",
-                        "render": function(data, type, row) {
-                            let actions = '';
-                            
-                            // Check permissions based on role
-                            if (window.canEditQuizzes || window.canDeleteQuizzes) {
-                                actions = '<div class="btn-group gap-2" role="group">';
-                                
-                                // Edit button
-                                if (window.canEditQuizzes) {
-                                    actions += `
-                                        <button class="btn btn-outline-primary" onclick="editQuiz(${data})" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                    `;
-                                }
-                                
-                                // Delete button
-                                if (window.canDeleteQuizzes) {
-                                    actions += `
-                                        <button class="btn btn-outline-danger" onclick="deleteQuiz(${data})" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    `;
-                                }
-                                
-                                actions += '</div>';
-                            }
-                            
-                            return actions;
-                        }
+        "columns": [
+            { 
+                "data": "title", 
+                "width": "25%",
+                "render": function(data, type, row) {
+                    return `<strong>${data}</strong>`;
+                }
+            },
+            { 
+                "data": "lesson_title", 
+                "width": "20%",
+                "render": function(data, type, row) {
+                    return data || 'N/A';
+                }
+            },
+            { 
+                "data": "grading_period_name", 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    if (data) {
+                        let badgeClass = 'badge bg-primary';
+                        if (data.toLowerCase().includes('prelim')) badgeClass = 'badge bg-info';
+                        else if (data.toLowerCase().includes('midterm')) badgeClass = 'badge bg-warning';
+                        else if (data.toLowerCase().includes('finals')) badgeClass = 'badge bg-danger';
+                        return `<span class="${badgeClass}">${data}</span>`;
                     }
-                ];
+                    return '<span class="badge bg-secondary">N/A</span>';
+                }
+            },
+            { 
+                "data": "max_score", 
+                "width": "10%",
+                "render": function(data, type, row) {
+                    return data ? `${data}` : '0';
+                }
+            },
+            { 
+                "data": "time_limit_minutes", 
+                "width": "12%",
+                "render": function(data, type, row) {
+                    return data ? `${data} min` : 'No limit';
+                }
+            },
+            { 
+                "data": "created_at", 
+                "width": "13%",
+                "render": function(data, type, row) {
+                    if (data) {
+                        const date = new Date(data);
+                        return date.toLocaleDateString();
+                    }
+                    return 'N/A';
+                }
+            },
+            { 
+                "data": "status", 
+                "orderable": false, 
+                "width": "10%",
+                "render": function(data, type, row) {
+                    let badgeClass = '';
+                    let badgeText = '';
+                    
+                    switch(data) {
+                        case 'active':
+                            badgeClass = 'badge bg-success';
+                            badgeText = 'Active';
+                            break;
+                        case 'inactive':
+                            badgeClass = 'badge bg-secondary';
+                            badgeText = 'Inactive';
+                            break;
+                        case 'completed':
+                            badgeClass = 'badge bg-info';
+                            badgeText = 'Completed';
+                            break;
+                        default:
+                            badgeClass = 'badge bg-success';
+                            badgeText = 'Active';
+                    }
+                    
+                    return `<span class="${badgeClass}">${badgeText}</span>`;
+                }
+            },
+            { 
+                "data": "actions", 
+                "orderable": false,
+                "width": "15%",
+                "render": function(data, type, row) {
+                    let actions = '<div class="btn-group gap-1" role="group">';
+                    
+                    // View Details button (always available)
+                    actions += `
+                        <button class="btn btn-outline-info" onclick="viewQuiz(${data})" title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    `;
+                    
+                    // Edit button (for admin/teacher)
+                    if (window.canEditQuizzes) {
+                        actions += `
+                            <button class="btn btn-outline-primary" onclick="editQuiz(${data})" title="Edit Quiz">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        `;
+                    }
+                    
+                    // Delete button (only for admin)
+                    if (window.canDeleteQuizzes && window.isAdmin) {
+                        actions += `
+                            <button class="btn btn-outline-danger" onclick="deleteQuiz(${data})" title="Delete Quiz">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        `;
+                    }
+                    
+                    actions += '</div>';
+                    return actions;
+                }
             }
-        })(),
-        "order": [[0, "desc"]],
+        ],
+        "order": [[0, "asc"]],
         "pageLength": 10,
         "responsive": true,
         "language": {
@@ -130,16 +182,21 @@ function setupModalEvents() {
         resetQuizForm();
     });
     
-    // Load lessons when modal is shown
-    $('#quizModal').on('shown.bs.modal', function () {
-        console.log('Modal shown event triggered');
-        loadLessons();
+    // Clear quiz details modal content when closed
+    $('#quizDetailsModal').on('hidden.bs.modal', function () {
+        document.getElementById('quizDetailsContent').innerHTML = '';
     });
     
-    // Also try loading lessons when modal is about to show
-    $('#quizModal').on('show.bs.modal', function () {
-        console.log('Modal show event triggered');
+    // Load lessons and grading periods when modal is shown
+    $('#quizModal').on('shown.bs.modal', function () {
         loadLessons();
+        loadGradingPeriods();
+    });
+    
+    // Also try loading lessons and grading periods when modal is about to show
+    $('#quizModal').on('show.bs.modal', function () {
+        loadLessons();
+        loadGradingPeriods();
     });
     
     // Form validation
@@ -153,53 +210,30 @@ function setupModalEvents() {
  * Load lessons for dropdown
  */
 function loadLessons() {
-    console.log('Loading lessons...');
+    const select = document.getElementById("lesson_id");
     
     // Wait a bit to ensure the modal is fully loaded
     setTimeout(() => {
         fetch("app/API/apiQuizzes.php?action=get_lessons")
             .then((response) => {
-                console.log('Response status:', response.status);
                 return response.json();
             })
             .then((data) => {
-                console.log('API Response:', data);
                 if (data.success) {
-                    const select = document.getElementById("lesson_id");
-                    console.log('Select element found:', select);
                     if (select) {
                         select.innerHTML = '<option value="">Select Lesson</option>';
                         if (data.data && data.data.length > 0) {
-                            console.log('Adding lessons:', data.data.length);
                             data.data.forEach((lesson) => {
                                 const option = document.createElement("option");
                                 option.value = lesson.id;
                                 option.textContent = lesson.title;
                                 select.appendChild(option);
-                                console.log('Added lesson:', lesson.title);
                             });
                         } else {
-                            console.log('No lessons data found');
                             select.innerHTML = '<option value="">No lessons available</option>';
                         }
                     } else {
                         console.error('Select element not found!');
-                        // Try again after a short delay
-                        setTimeout(() => {
-                            const select2 = document.getElementById("lesson_id");
-                            if (select2) {
-                                console.log('Select element found on retry');
-                                select2.innerHTML = '<option value="">Select Lesson</option>';
-                                if (data.data && data.data.length > 0) {
-                                    data.data.forEach((lesson) => {
-                                        const option = document.createElement("option");
-                                        option.value = lesson.id;
-                                        option.textContent = lesson.title;
-                                        select2.appendChild(option);
-                                    });
-                                }
-                            }
-                        }, 500);
                     }
                 } else {
                     console.error('API returned error:', data.message);
@@ -207,6 +241,45 @@ function loadLessons() {
             })
             .catch((error) => {
                 console.error("Error loading lessons:", error);
+            });
+    }, 100);
+}
+
+/**
+ * Load grading periods for dropdown
+ */
+function loadGradingPeriods() {
+    const select = document.getElementById("grading_period_id");
+    
+    // Wait a bit to ensure the modal is fully loaded
+    setTimeout(() => {
+        fetch("app/API/apiQuizzes.php?action=get_grading_periods")
+            .then((response) => {
+                return response.json();
+            })
+            .then((data) => {
+                if (data.success) {
+                    if (select) {
+                        select.innerHTML = '<option value="">Select Grading Period</option>';
+                        if (data.data && data.data.length > 0) {
+                            data.data.forEach((period) => {
+                                const option = document.createElement("option");
+                                option.value = period.id;
+                                option.textContent = `${period.name} (${period.semester_name} ${period.academic_year})`;
+                                select.appendChild(option);
+                            });
+                        } else {
+                            select.innerHTML = '<option value="">No grading periods available</option>';
+                        }
+                    } else {
+                        console.error('Grading period select element not found!');
+                    }
+                } else {
+                    console.error('Grading periods API returned error:', data.message);
+                }
+            })
+            .catch((error) => {
+                console.error("Error loading grading periods:", error);
             });
     }, 100);
 }
@@ -221,8 +294,9 @@ function resetQuizForm() {
     document.getElementById('quizId').value = '';
     currentQuizEditId = null;
     
-    // Reload lessons after form reset
+    // Reload lessons and grading periods after form reset
     loadLessons();
+    loadGradingPeriods();
     
     // Reset validation classes
     $('#quizForm .form-control').removeClass('is-valid is-invalid');
@@ -284,7 +358,7 @@ function saveQuiz() {
  */
 function validateQuizForm() {
     let isValid = true;
-    const requiredFields = ['lesson_id', 'title', 'max_score'];
+    const requiredFields = ['lesson_id', 'grading_period_id', 'title', 'max_score'];
     
     requiredFields.forEach(field => {
         const element = document.getElementById(field);
@@ -340,12 +414,9 @@ function editQuiz(id) {
  * Load lessons for edit mode
  */
 function loadLessonsForEdit(quizData) {
-    console.log('Loading lessons for edit mode...');
-    
     fetch("app/API/apiQuizzes.php?action=get_lessons")
         .then((response) => response.json())
         .then((data) => {
-            console.log('Lessons loaded for edit:', data);
             if (data.success) {
                 const select = document.getElementById("lesson_id");
                 if (select) {
@@ -358,17 +429,9 @@ function loadLessonsForEdit(quizData) {
                             select.appendChild(option);
                         });
                         
-                        // Now populate the form with quiz data
-                        populateQuizForm(quizData);
-                        
-                        // Set form action and title
-                        document.getElementById('formAction').value = 'update_quiz';
-                        document.getElementById('modalTitle').textContent = 'Edit Quiz';
-                        
-                        // Show the modal
-                        $('#quizModal').modal('show');
+                        // Load grading periods for edit mode
+                        loadGradingPeriodsForEdit(quizData);
                     } else {
-                        console.log('No lessons data found');
                         select.innerHTML = '<option value="">No lessons available</option>';
                     }
                 } else {
@@ -384,17 +447,59 @@ function loadLessonsForEdit(quizData) {
 }
 
 /**
+ * Load grading periods for edit mode
+ */
+function loadGradingPeriodsForEdit(quizData) {
+    fetch("app/API/apiQuizzes.php?action=get_grading_periods")
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                const select = document.getElementById("grading_period_id");
+                if (select) {
+                    select.innerHTML = '<option value="">Select Grading Period</option>';
+                    if (data.data && data.data.length > 0) {
+                        data.data.forEach((period) => {
+                            const option = document.createElement("option");
+                            option.value = period.id;
+                            option.textContent = `${period.name} (${period.semester_name} ${period.academic_year})`;
+                            select.appendChild(option);
+                        });
+                        
+                        // Now populate the form with quiz data
+                        populateQuizForm(quizData);
+                        
+                        // Set form action and title
+                        document.getElementById('formAction').value = 'update_quiz';
+                        document.getElementById('modalTitle').textContent = 'Edit Quiz';
+                        document.getElementById('submitButtonText').textContent = 'Update';
+                        
+                        // Show the modal
+                        $('#quizModal').modal('show');
+                    } else {
+                        select.innerHTML = '<option value="">No grading periods available</option>';
+                    }
+                } else {
+                    console.error('Grading period select element not found!');
+                }
+            } else {
+                console.error('API returned error:', data.message);
+            }
+        })
+        .catch((error) => {
+            console.error("Error loading grading periods for edit:", error);
+        });
+}
+
+/**
  * Populate quiz form with data
  */
 function populateQuizForm(quiz) {
-    console.log('Populating quiz form with data:', quiz);
     document.getElementById('quizId').value = quiz.id;
     document.getElementById('lesson_id').value = quiz.lesson_id;
+    document.getElementById('grading_period_id').value = quiz.grading_period_id;
     document.getElementById('title').value = quiz.title;
     document.getElementById('max_score').value = quiz.max_score;
     document.getElementById('time_limit_minutes').value = quiz.time_limit_minutes || '';
-    
-    console.log('Form populated. Lesson ID set to:', quiz.lesson_id);
 }
 
 /**
@@ -412,20 +517,8 @@ function viewQuiz(id) {
     .then(data => {
         if (data.success) {
             const quiz = data.data;
-            Swal.fire({
-                title: 'Quiz Details',
-                html: `
-                    <div class="text-start">
-                        <p><strong>Title:</strong> ${quiz.title}</p>
-                        <p><strong>Lesson:</strong> ${quiz.lesson_title || 'N/A'}</p>
-                        <p><strong>Max Score:</strong> ${quiz.max_score}</p>
-                        <p><strong>Time Limit:</strong> ${quiz.time_limit_minutes ? quiz.time_limit_minutes + ' minutes' : 'No limit'}</p>
-                        <p><strong>Created:</strong> ${new Date(quiz.created_at).toLocaleDateString()}</p>
-                    </div>
-                `,
-                icon: 'info',
-                confirmButtonText: 'Close'
-            });
+            populateQuizDetailsModal(quiz);
+            $('#quizDetailsModal').modal('show');
         } else {
             Swal.fire({
                 icon: 'error',
@@ -442,6 +535,129 @@ function viewQuiz(id) {
             text: 'Failed to load quiz details.'
         });
     });
+}
+
+/**
+ * Populate quiz details modal
+ */
+function populateQuizDetailsModal(quiz) {
+    const content = document.getElementById('quizDetailsContent');
+    
+    // Get grading period badge class
+    let gradingPeriodBadgeClass = 'badge bg-primary';
+    if (quiz.grading_period_name) {
+        const periodName = quiz.grading_period_name.toLowerCase();
+        if (periodName.includes('prelim')) gradingPeriodBadgeClass = 'badge bg-info';
+        else if (periodName.includes('midterm')) gradingPeriodBadgeClass = 'badge bg-warning';
+        else if (periodName.includes('finals')) gradingPeriodBadgeClass = 'badge bg-danger';
+    }
+    
+    // Get status badge class
+    let statusBadgeClass = 'badge bg-success';
+    let statusText = 'Active';
+    if (quiz.grading_period_status) {
+        switch (quiz.grading_period_status) {
+            case 'completed':
+                statusBadgeClass = 'badge bg-info';
+                statusText = 'Completed';
+                break;
+            case 'inactive':
+                statusBadgeClass = 'badge bg-secondary';
+                statusText = 'Inactive';
+                break;
+            case 'pending':
+                statusBadgeClass = 'badge bg-warning';
+                statusText = 'Pending';
+                break;
+        }
+    }
+    
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title text-primary">
+                            <i class="bi bi-card-heading"></i> Quiz Information
+                        </h6>
+                        <div class="mb-2">
+                            <strong>Title:</strong><br>
+                            <span class="text-dark">${quiz.title}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Lesson:</strong><br>
+                            <span class="text-muted">${quiz.lesson_title || 'N/A'}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Grading Period:</strong><br>
+                            <span class="${gradingPeriodBadgeClass}">${quiz.grading_period_name || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title text-success">
+                            <i class="bi bi-trophy"></i> Quiz Settings
+                        </h6>
+                        <div class="mb-2">
+                            <strong>Max Score:</strong><br>
+                            <span class="badge bg-primary">${quiz.max_score} points</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Time Limit:</strong><br>
+                            <span class="text-muted">
+                                ${quiz.time_limit_minutes ? quiz.time_limit_minutes + ' minutes' : 'No time limit'}
+                            </span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Status:</strong><br>
+                            <span class="${statusBadgeClass}">${statusText}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title text-info">
+                            <i class="bi bi-calendar"></i> Additional Information
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Created:</strong><br>
+                                <span class="text-muted">${new Date(quiz.created_at).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Subject:</strong><br>
+                                <span class="text-muted">${quiz.subject_name || 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="alert alert-info mt-3">
+            <h6><i class="bi bi-info-circle"></i> Quiz Guidelines</h6>
+            <ul class="mb-0">
+                <li>Students can take this quiz during the specified grading period</li>
+                <li>Time limit applies if specified, otherwise no time restriction</li>
+                <li>Quiz status depends on the grading period status</li>
+                <li>All quiz attempts are recorded and graded automatically</li>
+            </ul>
+        </div>
+    `;
 }
 
 /**

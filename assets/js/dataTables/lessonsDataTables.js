@@ -32,10 +32,8 @@ function initializeLessonsTable() {
             }
         },
         "columns": [
-            { "data": "id", "width": "5%" },
-            { "data": "title", "width": "25%" },
-            { "data": "subject_name", "width": "20%" },
-            { "data": "content", "width": "30%", "render": function(data, type, row) {
+            { "data": "title", "width": "30%" },
+            { "data": "content", "width": "40%", "render": function(data, type, row) {
                 if (type === 'display' && data && data.length > 100) {
                     return data.substr(0, 100) + '...';
                 }
@@ -79,7 +77,7 @@ function initializeLessonsTable() {
                 }
             }
         ],
-        "order": [[0, "desc"]],
+        "order": [[2, "desc"]],
         "pageLength": 10,
         "responsive": true,
         "language": {

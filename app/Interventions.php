@@ -40,16 +40,12 @@ class Interventions {
         $data = [];
         foreach ($interventions as $intervention) {
             $data[] = [
-                'id' => $intervention['id'],
-                'student_id' => $intervention['student_id'],
                 'student_name' => $intervention['student_name'],
-                'email' => $intervention['email'],
-                'course' => $intervention['course'],
-                'year_level' => $intervention['year_level'],
                 'subject_name' => $intervention['subject_name'],
                 'notes' => $intervention['notes'],
-                'notify_teacher' => $intervention['notify_teacher_display'],
-                'created_at' => date('M d, Y', strtotime($intervention['created_at']))
+                'notify_teacher' => $intervention['notify_teacher'],
+                'created_at' => $intervention['created_at'],
+                'actions' => $intervention['id'] // Pass ID for actions column
             ];
         }
         
@@ -90,7 +86,7 @@ class Interventions {
         
         return $stmt->execute([
             $data['student_id'],
-            $data['subject_id'] ?? null,
+            $data['subject_id'],
             $data['notes'],
             $data['notify_teacher'] ?? 0
         ]);
@@ -108,7 +104,7 @@ class Interventions {
         
         return $stmt->execute([
             $data['student_id'],
-            $data['subject_id'] ?? null,
+            $data['subject_id'],
             $data['notes'],
             $data['notify_teacher'] ?? 0,
             $id
@@ -307,6 +303,10 @@ class Interventions {
         
         if (empty($data['student_id'])) {
             $errors[] = 'Student is required';
+        }
+        
+        if (empty($data['subject_id'])) {
+            $errors[] = 'Subject is required';
         }
         
         if (empty($data['notes'])) {

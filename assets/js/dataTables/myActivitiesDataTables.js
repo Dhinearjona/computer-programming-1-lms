@@ -7,6 +7,11 @@ let myActivitiesTable;
 
 $(document).ready(function() {
     initializeMyActivitiesTable();
+    
+    // Reset modal title when closed
+    $('#submissionModal').on('hidden.bs.modal', function () {
+        document.getElementById('submissionModalTitle').textContent = 'Submit Activity';
+    });
 });
 
 /**
@@ -42,10 +47,10 @@ function initializeMyActivitiesTable() {
             { "data": "subject_name", "width": "15%" },
             { 
                 "data": "description", 
-                "width": "25%",
+                "width": "20%",
                 "render": function(data, type, row) {
-                    if (data && data.length > 80) {
-                        return data.substring(0, 80) + '...';
+                    if (data && data.length > 60) {
+                        return data.substring(0, 60) + '...';
                     }
                     return data || '';
                 }
@@ -59,6 +64,16 @@ function initializeMyActivitiesTable() {
                         return date.toLocaleDateString();
                     }
                     return 'No due date';
+                }
+            },
+            { 
+                "data": "grading_period_name", 
+                "width": "10%",
+                "render": function(data, type, row) {
+                    if (data) {
+                        return '<span class="badge bg-info">' + data + '</span>';
+                    }
+                    return '';
                 }
             },
             { 
@@ -76,78 +91,52 @@ function initializeMyActivitiesTable() {
                 }
             },
             { 
-                "data": "status", 
+                "data": "grade", 
                 "orderable": false, 
                 "width": "8%",
                 "render": function(data, type, row) {
-                    let badgeClass = '';
-                    let badgeText = '';
-                    
-                    // Determine status based on due date and current date
-                    const dueDate = new Date(row.due_date);
-                    const currentDate = new Date();
-                    const cutoffDate = new Date(row.cutoff_date);
-                    
-                    if (row.status === 'inactive') {
-                        badgeClass = 'badge bg-secondary';
-                        badgeText = 'Inactive';
-                    } else if (currentDate > cutoffDate) {
-                        badgeClass = 'badge bg-danger';
-                        badgeText = 'Missed';
-                    } else if (currentDate > dueDate) {
-                        badgeClass = 'badge bg-warning';
-                        badgeText = 'Overdue';
+                    if (row.grade && row.grade > 0) {
+                        return '<span class="badge bg-primary">' + row.grade + '</span>';
                     } else {
-                        badgeClass = 'badge bg-success';
-                        badgeText = 'Active';
+                        return '<span class="badge bg-light text-dark">Not Graded</span>';
                     }
-                    
-                    return `<span class="${badgeClass}">${badgeText}</span>`;
                 }
             },
             { 
                 "data": "actions", 
                 "orderable": false, 
-                "width": "10%",
+                "width": "15%",
                 "render": function(data, type, row) {
-                    const dueDate = new Date(row.due_date);
-                    const currentDate = new Date();
-                    const cutoffDate = new Date(row.cutoff_date);
-                    const isExpired = currentDate > cutoffDate;
-                    const isOverdue = currentDate > dueDate;
+                    let actions = '<div class="btn-group gap-1" role="group">';
                     
-                    let actions = `
-                        <div class="btn-group gap-1" role="group">
-                            <button class="btn btn-outline-info" onclick="viewActivityDetails(${row.id})" title="View Details">
-                                <i class="bi bi-eye"></i>
-                            </button>
+                    // View Details button
+                    actions += `
+                        <button class="btn btn-outline-info" onclick="viewActivityDetails(${row.id})" title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </button>
                     `;
                     
-                    // Show submit/unsubmit buttons only if not expired and activity is active
-                    if (!isExpired && row.status === 'active') {
+                    // Submit/Update button (only if not past cutoff date)
+                    const cutoffDate = new Date(row.cutoff_date);
+                    const currentDate = new Date();
+                    
+                    if (currentDate <= cutoffDate && window.canSubmitActivities) {
                         if (row.submission_status === 'submitted') {
                             actions += `
-                                <button class="btn btn-outline-warning" onclick="unsubmitActivity(${row.id})" title="Unsubmit">
-                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                <button class="btn btn-outline-warning" onclick="updateSubmission(${row.id})" title="Update Submission">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
                             `;
                         } else {
                             actions += `
-                                <button class="btn btn-outline-primary" onclick="openSubmissionModal(${row.id})" title="Submit">
+                                <button class="btn btn-outline-primary" onclick="submitActivity(${row.id})" title="Submit Activity">
                                     <i class="bi bi-upload"></i>
                                 </button>
                             `;
                         }
-                    } else if (isExpired) {
-                        // Show disabled button when expired
-                        actions += `
-                            <button class="btn btn-outline-secondary" disabled title="Submission period has ended">
-                                <i class="bi bi-lock"></i>
-                            </button>
-                        `;
                     }
                     
-                    actions += `</div>`;
+                    actions += '</div>';
                     return actions;
                 }
             }
@@ -319,9 +308,90 @@ function openSubmissionModal(activityId) {
 }
 
 /**
- * Submit activity
+ * Open submission modal for specific activity
  */
-function submitActivity() {
+function submitActivity(activityId) {
+    // Get activity details first
+    fetch(`app/API/apiMyActivities.php?action=get_activity&id=${activityId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Populate modal with activity details
+                document.getElementById('submissionActivityId').value = activityId;
+                document.getElementById('submissionActivityTitle').textContent = data.data.title;
+                document.getElementById('submissionActivityDescription').textContent = data.data.description || 'No description provided';
+                document.getElementById('submissionDueDate').textContent = new Date(data.data.due_date).toLocaleDateString();
+                
+                // Clear form
+                document.getElementById('submissionLink').value = '';
+                document.getElementById('submissionText').value = '';
+                
+                // Show modal
+                $('#submissionModal').modal('show');
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Failed to load activity details.'
+            });
+        });
+}
+
+/**
+ * Update existing submission
+ */
+function updateSubmission(activityId) {
+    // Get activity details and current submission
+    fetch(`app/API/apiMyActivities.php?action=get_activity&id=${activityId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Populate modal with activity details
+                document.getElementById('submissionActivityId').value = activityId;
+                document.getElementById('submissionActivityTitle').textContent = data.data.title;
+                document.getElementById('submissionActivityDescription').textContent = data.data.description || 'No description provided';
+                document.getElementById('submissionDueDate').textContent = new Date(data.data.due_date).toLocaleDateString();
+                
+                // Pre-fill with existing submission data
+                document.getElementById('submissionLink').value = data.data.submission_link || '';
+                document.getElementById('submissionText').value = data.data.submission_text || '';
+                
+                // Update modal title
+                document.getElementById('submissionModalTitle').textContent = 'Update Submission';
+                
+                // Show modal
+                $('#submissionModal').modal('show');
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Failed to load activity details.'
+            });
+        });
+}
+
+/**
+ * Submit activity (called from modal)
+ */
+function submitActivityForm() {
     const form = document.getElementById('submissionForm');
     const formData = new FormData(form);
     

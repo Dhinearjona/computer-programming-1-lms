@@ -41,7 +41,7 @@ try {
                 
                 $data = [
                     'student_id' => (int)($_POST['student_id'] ?? 0),
-                    'subject_id' => (int)($_POST['subject_id'] ?? 0) ?: null,
+                    'subject_id' => (int)($_POST['subject_id'] ?? 0),
                     'notes' => trim($_POST['notes'] ?? ''),
                     'notify_teacher' => (int)($_POST['notify_teacher'] ?? 0)
                 ];
@@ -85,7 +85,7 @@ try {
                 
                 $data = [
                     'student_id' => (int)($_POST['student_id'] ?? 0),
-                    'subject_id' => (int)($_POST['subject_id'] ?? 0) ?: null,
+                    'subject_id' => (int)($_POST['subject_id'] ?? 0),
                     'notes' => trim($_POST['notes'] ?? ''),
                     'notify_teacher' => (int)($_POST['notify_teacher'] ?? 0)
                 ];
@@ -231,6 +231,11 @@ try {
                 
             case 'get_students':
                 $result = $interventionsModel->getAllStudents();
+                echo json_encode(['success' => true, 'data' => $result]);
+                break;
+                
+            case 'get_subjects':
+                $result = $interventionsModel->getAllSubjects();
                 echo json_encode(['success' => true, 'data' => $result]);
                 break;
                 

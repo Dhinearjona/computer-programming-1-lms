@@ -11,243 +11,252 @@ USE lms;
 -- USERS
 -- ========================
 CREATE TABLE users (
-id INT AUTO_INCREMENT PRIMARY KEY,
-first_name VARCHAR(100) NOT NULL,
-last_name VARCHAR(100) NOT NULL,
-email VARCHAR(150) UNIQUE NOT NULL,
-password VARCHAR(255) NOT NULL,
-role ENUM('admin','teacher','student') NOT NULL,
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  first_name VARCHAR(100) NOT NULL,
+  last_name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('admin','teacher','student') NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ========================
 -- STUDENTS
 -- ========================
 CREATE TABLE students (
-id INT AUTO_INCREMENT PRIMARY KEY,
-user_id INT NOT NULL,
-course VARCHAR(50) DEFAULT 'BSIT',
-year_level VARCHAR(50) DEFAULT '1st Year',
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (user_id) REFERENCES users(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL UNIQUE,
+  course VARCHAR(50) DEFAULT 'BSIT',
+  year_level VARCHAR(50) DEFAULT '1st Year',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- ========================
 -- TEACHERS
 -- ========================
 CREATE TABLE teachers (
-id INT AUTO_INCREMENT PRIMARY KEY,
-user_id INT NOT NULL,
-department VARCHAR(100),
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (user_id) REFERENCES users(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL UNIQUE,
+  department VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- ========================
 -- SUBJECTS
 -- ========================
 CREATE TABLE subjects (
-id INT AUTO_INCREMENT PRIMARY KEY,
-name VARCHAR(150) NOT NULL,
-description TEXT,
-year_level VARCHAR(50) DEFAULT '1st Year',
-course VARCHAR(50) DEFAULT 'BSIT',
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  description TEXT,
+  year_level VARCHAR(50) DEFAULT '1st Year',
+  course VARCHAR(50) DEFAULT 'BSIT',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ========================
 -- ENROLLMENTS
 -- ========================
 CREATE TABLE enrollments (
-id INT AUTO_INCREMENT PRIMARY KEY,
-student_id INT NOT NULL,
-subject_id INT NOT NULL,
-enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (student_id) REFERENCES students(id),
-FOREIGN KEY (subject_id) REFERENCES subjects(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT NOT NULL,
+  subject_id INT NOT NULL,
+  enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_enrollment (student_id, subject_id)
 );
 
 -- ========================
 -- LESSONS
 -- ========================
 CREATE TABLE lessons (
-id INT AUTO_INCREMENT PRIMARY KEY,
-subject_id INT NOT NULL,
-title VARCHAR(150) NOT NULL,
-content TEXT,
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (subject_id) REFERENCES subjects(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  subject_id INT NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  content TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
 );
 
 -- ========================
 -- SEMESTERS
 -- ========================
 CREATE TABLE semesters (
-id INT AUTO_INCREMENT PRIMARY KEY,
-name VARCHAR(100) NOT NULL,
-academic_year VARCHAR(20) NOT NULL,
-start_date DATE NOT NULL,
-end_date DATE NOT NULL,
-status ENUM('active','inactive','completed') DEFAULT 'active',
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  academic_year VARCHAR(20) NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  status ENUM('active','inactive','completed') DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ========================
 -- GRADING PERIODS
 -- ========================
 CREATE TABLE grading_periods (
-id INT AUTO_INCREMENT PRIMARY KEY,
-semester_id INT NOT NULL,
-name ENUM('prelim','midterm','finals') NOT NULL,
-start_date DATE NOT NULL,
-end_date DATE NOT NULL,
-weight_percent DECIMAL(5,2) NOT NULL,
-status ENUM('active','inactive','completed') DEFAULT 'active',
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (semester_id) REFERENCES semesters(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  semester_id INT NOT NULL,
+  name ENUM('prelim','midterm','finals') NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  weight_percent DECIMAL(5,2) NOT NULL,
+  status ENUM('active','inactive','completed','pending') DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (semester_id) REFERENCES semesters(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_period (semester_id, name)
 );
 
 -- ========================
 -- QUIZZES
 -- ========================
 CREATE TABLE quizzes (
-id INT AUTO_INCREMENT PRIMARY KEY,
-lesson_id INT NOT NULL,
-grading_period_id INT NOT NULL,
-title VARCHAR(150) NOT NULL,
-max_score INT NOT NULL,
-time_limit_minutes INT DEFAULT NULL,
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (lesson_id) REFERENCES lessons(id),
-FOREIGN KEY (grading_period_id) REFERENCES grading_periods(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  lesson_id INT NOT NULL,
+  grading_period_id INT NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  max_score INT NOT NULL,
+  time_limit_minutes INT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
+  FOREIGN KEY (grading_period_id) REFERENCES grading_periods(id) ON DELETE CASCADE
 );
 
 -- ========================
 -- QUIZ RESULTS
 -- ========================
 CREATE TABLE quiz_results (
-id INT AUTO_INCREMENT PRIMARY KEY,
-quiz_id INT NOT NULL,
-student_id INT NOT NULL,
-score INT NOT NULL,
-taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (quiz_id) REFERENCES quizzes(id),
-FOREIGN KEY (student_id) REFERENCES students(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  quiz_id INT NOT NULL,
+  student_id INT NOT NULL,
+  score INT NOT NULL,
+  taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_quiz_result (quiz_id, student_id)
 );
 
 -- ========================
 -- ACTIVITIES
 -- ========================
 CREATE TABLE activities (
-id INT AUTO_INCREMENT PRIMARY KEY,
-subject_id INT NOT NULL,
-grading_period_id INT NOT NULL,
-title VARCHAR(150) NOT NULL,
-description TEXT,
-allow_from DATE,
-due_date DATE,
-cutoff_date DATE,
-reminder_date DATE,
-deduction_percent DECIMAL(5,2) DEFAULT 0,
-status ENUM('active','inactive','missed') DEFAULT 'active',
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (subject_id) REFERENCES subjects(id),
-FOREIGN KEY (grading_period_id) REFERENCES grading_periods(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  subject_id INT NOT NULL,
+  grading_period_id INT NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  description TEXT,
+  allow_from DATE,
+  due_date DATE,
+  cutoff_date DATE,
+  reminder_date DATE,
+  deduction_percent DECIMAL(5,2) DEFAULT 0,
+  status ENUM('active','inactive','missed','completed','pending') DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+  FOREIGN KEY (grading_period_id) REFERENCES grading_periods(id) ON DELETE CASCADE
 );
 
 -- ========================
 -- ACTIVITY SUBMISSIONS
 -- ========================
 CREATE TABLE activity_submissions (
-id INT AUTO_INCREMENT PRIMARY KEY,
-activity_id INT NOT NULL,
-student_id INT NOT NULL,
-file_path VARCHAR(255),
-submission_link TEXT,
-submission_text TEXT,
-status ENUM('submitted', 'unsubmitted') DEFAULT 'submitted',
-submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-FOREIGN KEY (activity_id) REFERENCES activities(id),
-FOREIGN KEY (student_id) REFERENCES students(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  activity_id INT NOT NULL,
+  student_id INT NOT NULL,
+  file_path VARCHAR(255),
+  submission_link TEXT,
+  submission_text TEXT,
+  status ENUM('submitted', 'unsubmitted') DEFAULT 'submitted',
+  submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_submission (activity_id, student_id)
 );
 
 -- ========================
 -- ATTENDANCE
 -- ========================
 CREATE TABLE attendance (
-id INT AUTO_INCREMENT PRIMARY KEY,
-student_id INT NOT NULL,
-subject_id INT NOT NULL,
-attendance_date DATE NOT NULL,
-status ENUM('present','absent','late','excused') DEFAULT 'present',
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (student_id) REFERENCES students(id),
-FOREIGN KEY (subject_id) REFERENCES subjects(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT NOT NULL,
+  subject_id INT NOT NULL,
+  attendance_date DATE NOT NULL,
+  status ENUM('present','absent','late','excused') DEFAULT 'present',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_attendance (student_id, subject_id, attendance_date)
 );
 
 -- ========================
 -- INTERVENTIONS
 -- ========================
 CREATE TABLE interventions (
-id INT AUTO_INCREMENT PRIMARY KEY,
-student_id INT NOT NULL,
-subject_id INT NOT NULL,
-notes TEXT,
-notify_teacher TINYINT(1) DEFAULT 0,
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (student_id) REFERENCES students(id),
-FOREIGN KEY (subject_id) REFERENCES subjects(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT NOT NULL,
+  subject_id INT NOT NULL,
+  notes TEXT,
+  notify_teacher TINYINT(1) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
 );
 
+-- ========================
 -- ANNOUNCEMENTS
 -- ========================
 CREATE TABLE announcements (
-id INT AUTO_INCREMENT PRIMARY KEY,
-title VARCHAR(255) NOT NULL,
-message TEXT NOT NULL,
-created_by INT NOT NULL,
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (created_by) REFERENCES users(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  created_by INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- ========================
 -- GRADES
 -- ========================
 CREATE TABLE grades (
-id INT AUTO_INCREMENT PRIMARY KEY,
-student_id INT NOT NULL,
-subject_id INT NOT NULL,
-semester_id INT NOT NULL,
-grading_period_id INT NOT NULL,
-activity_score DECIMAL(5,2) DEFAULT 0,
-quiz_score DECIMAL(5,2) DEFAULT 0,
-exam_score DECIMAL(5,2) DEFAULT 0,
-period_grade DECIMAL(5,2) DEFAULT 0,
-status ENUM('pass','fail','pending') DEFAULT 'pending',
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (student_id) REFERENCES students(id),
-FOREIGN KEY (subject_id) REFERENCES subjects(id),
-FOREIGN KEY (semester_id) REFERENCES semesters(id),
-FOREIGN KEY (grading_period_id) REFERENCES grading_periods(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT NOT NULL,
+  subject_id INT NOT NULL,
+  semester_id INT NOT NULL,
+  grading_period_id INT NOT NULL,
+  activity_score DECIMAL(5,2) DEFAULT 0,
+  quiz_score DECIMAL(5,2) DEFAULT 0,
+  exam_score DECIMAL(5,2) DEFAULT 0,
+  period_grade DECIMAL(5,2) DEFAULT 0,
+  status ENUM('pass','fail','pending') DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+  FOREIGN KEY (semester_id) REFERENCES semesters(id) ON DELETE CASCADE,
+  FOREIGN KEY (grading_period_id) REFERENCES grading_periods(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_grade (student_id, subject_id, semester_id, grading_period_id)
 );
 
 -- ========================
 -- FINAL GRADES
 -- ========================
 CREATE TABLE final_grades (
-id INT AUTO_INCREMENT PRIMARY KEY,
-student_id INT NOT NULL,
-subject_id INT NOT NULL,
-semester_id INT NOT NULL,
-prelim_grade DECIMAL(5,2) DEFAULT 0,
-midterm_grade DECIMAL(5,2) DEFAULT 0,
-finals_grade DECIMAL(5,2) DEFAULT 0,
-final_grade DECIMAL(5,2) DEFAULT 0,
-status ENUM('pass','fail','pending') DEFAULT 'pending',
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (student_id) REFERENCES students(id),
-FOREIGN KEY (subject_id) REFERENCES subjects(id),
-FOREIGN KEY (semester_id) REFERENCES semesters(id)
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  student_id INT NOT NULL,
+  subject_id INT NOT NULL,
+  semester_id INT NOT NULL,
+  prelim_grade DECIMAL(5,2) DEFAULT 0,
+  midterm_grade DECIMAL(5,2) DEFAULT 0,
+  finals_grade DECIMAL(5,2) DEFAULT 0,
+  final_grade DECIMAL(5,2) DEFAULT 0,
+  status ENUM('pass','fail','pending') DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+  FOREIGN KEY (semester_id) REFERENCES semesters(id) ON DELETE CASCADE,
+  UNIQUE KEY unique_final_grade (student_id, subject_id, semester_id)
 );
 
 -- ========================
@@ -259,10 +268,10 @@ CREATE TABLE activity_grades (
   score DECIMAL(5,2) NOT NULL,
   max_score DECIMAL(5,2) NOT NULL,
   comments TEXT,
-  graded_by INT NOT NULL,
+  graded_by INT NULL,
   graded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (submission_id) REFERENCES activity_submissions(id),
-  FOREIGN KEY (graded_by) REFERENCES users(id)
+  FOREIGN KEY (submission_id) REFERENCES activity_submissions(id) ON DELETE CASCADE,
+  FOREIGN KEY (graded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
 -- ========================
@@ -299,9 +308,9 @@ INSERT INTO grading_periods (semester_id, name, start_date, end_date, weight_per
 (1, 'midterm', '2025-10-01', '2025-11-15', 30.00, 'active'),
 (1, 'finals', '2025-11-16', '2025-12-15', 40.00, 'pending');
 
--- -- ENROLLMENTS (all students enrolled in Computer Programming 1)
--- INSERT INTO enrollments (student_id, subject_id) VALUES
--- (1, 1), (2, 1), (3, 1);
+-- ENROLLMENTS (all students enrolled in Computer Programming 1)
+INSERT INTO enrollments (student_id, subject_id) VALUES
+(1, 1), (2, 1), (3, 1);
 
 -- LESSONS
 INSERT INTO lessons (subject_id, title, content) VALUES
@@ -327,11 +336,11 @@ INSERT INTO quizzes (lesson_id, grading_period_id, title, max_score, time_limit_
 (5, 3, 'Finals Quiz 1: File Handling', 100, 25),
 (6, 3, 'Finals Quiz 2: Data Structures', 100, 35);
 
--- -- QUIZ RESULTS
--- INSERT INTO quiz_results (quiz_id, student_id, score) VALUES
--- (1, 1, 60),
--- (2, 2, 40),
--- (3, 3, 85);
+-- QUIZ RESULTS
+INSERT INTO quiz_results (quiz_id, student_id, score) VALUES
+(1, 1, 60),
+(2, 2, 40),
+(3, 3, 85);
 
 -- ACTIVITIES (Prelim Period)
 INSERT INTO activities (subject_id, grading_period_id, title, description, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) VALUES
@@ -351,29 +360,29 @@ INSERT INTO activities (subject_id, grading_period_id, title, description, allow
 (1, 3, 'Finals Activity 2: Linked List Implementation', 'Implement a basic linked list with insert and delete operations', '2025-11-30', '2025-12-07', '2025-12-09', '2025-12-05', 5.00, 'pending'),
 (1, 3, 'Finals Activity 3: Final Project', 'Create a comprehensive C program demonstrating all concepts learned', '2025-12-01', '2025-12-12', '2025-12-14', '2025-12-10', 10.00, 'pending');
 
--- -- ACTIVITY SUBMISSIONS
--- INSERT INTO activity_submissions (activity_id, student_id, file_path) VALUES
--- (1, 1, '/submissions/juan_act1.c'),
--- (2, 2, '/submissions/maria_act2.c'),
--- (3, 3, '/submissions/pedro_act3.c');
+-- ACTIVITY SUBMISSIONS
+INSERT INTO activity_submissions (activity_id, student_id, file_path) VALUES
+(1, 1, '/submissions/juan_act1.c'),
+(2, 2, '/submissions/maria_act2.c'),
+(3, 3, '/submissions/pedro_act3.c');
 
--- -- ATTENDANCE
--- INSERT INTO attendance (student_id, subject_id, attendance_date, status) VALUES
--- (1, 1, '2025-09-01', 'present'),
--- (2, 1, '2025-09-01', 'absent'),
--- (3, 1, '2025-09-01', 'late');
+-- ATTENDANCE
+INSERT INTO attendance (student_id, subject_id, attendance_date, status) VALUES
+(1, 1, '2025-09-01', 'present'),
+(2, 1, '2025-09-01', 'absent'),
+(3, 1, '2025-09-01', 'late');
 
--- -- INTERVENTIONS
--- INSERT INTO interventions (student_id, subject_id, notes, notify_teacher) VALUES
--- (1, 1, 'Needs improvement in quizzes', 1),
--- (2, 1, 'Absent multiple times', 1),
--- (3, 1, 'Doing well, keep it up', 0);
+-- INTERVENTIONS
+INSERT INTO interventions (student_id, subject_id, notes, notify_teacher) VALUES
+(1, 1, 'Needs improvement in quizzes', 1),
+(2, 1, 'Absent multiple times', 1),
+(3, 1, 'Doing well, keep it up', 0);
 
--- -- ANNOUNCEMENTS
--- INSERT INTO announcements (title, message, created_by) VALUES
--- ('Welcome to Computer Programming 1', 'Welcome to our Computer Programming 1 class! This semester we will be learning the fundamentals of C programming. Please make sure to attend all classes and submit assignments on time.', 4),
--- ('Assignment 1 Due Date', 'Reminder: Assignment 1 (Hello World Program) is due on September 5th. Late submissions will have a 5% deduction per day.', 4),
--- ('Quiz Schedule Update', 'The first quiz on Variables and Data Types has been scheduled for next week. Please review your notes and practice exercises.', 4);
+-- ANNOUNCEMENTS
+INSERT INTO announcements (title, message, created_by) VALUES
+('Welcome to Computer Programming 1', 'Welcome to our Computer Programming 1 class! This semester we will be learning the fundamentals of C programming. Please make sure to attend all classes and submit assignments on time.', 4),
+('Assignment 1 Due Date', 'Reminder: Assignment 1 (Hello World Program) is due on September 5th. Late submissions will have a 5% deduction per day.', 4),
+('Quiz Schedule Update', 'The first quiz on Variables and Data Types has been scheduled for next week. Please review your notes and practice exercises.', 4);
 
 -- SAMPLE GRADES (Prelim Period - Completed)
 INSERT INTO grades (student_id, subject_id, semester_id, grading_period_id, activity_score, quiz_score, exam_score, period_grade, status) VALUES

@@ -3,13 +3,18 @@
  */
 
 // Global variables
-let interventionsTable;
-let currentInterventionEditId = null;
+var interventionsTable;
+var currentInterventionEditId = null;
 
 $(document).ready(function () {
+  // Prevent multiple initializations
+  if (window.interventionsInitialized) {
+    return;
+  }
+  window.interventionsInitialized = true;
+  
   initializeInterventionsTable();
   setupModalEvents();
-  // Note: loadStudents() and CommonAPI.loadSubjects() will be called when modal opens
 });
 
 /**
@@ -22,62 +27,105 @@ function initializeInterventionsTable() {
     ajax: {
       url: "app/API/apiInterventions.php?action=datatable",
       type: "GET",
+      dataSrc: function(json) { 
+        return json.data;
+      },
       error: function (xhr, error, thrown) {
         console.error("DataTables error:", error);
+        console.error("XHR:", xhr);
+        console.error("Response:", xhr.responseText);
         Swal.fire({
           icon: "error",
           title: "Error!",
-          text: "Failed to load interventions data.",
+          text: "Failed to load interventions data: " + error,
         });
       },
     },
     "columns": [
-        { "data": "id", "width": "5%" },
-        { "data": "student_name", "width": "15%" },
-        { "data": "email", "width": "15%" },
-        { "data": "course", "width": "10%" },
-        { "data": "year_level", "width": "10%" },
-        { "data": "subject_name", "width": "15%" },
-        { "data": "notes", "width": "20%" },
-        { "data": "notify_teacher", "width": "10%" },
-        { "data": "created_at", "width": "10%" },
+        { 
+            "data": "student_name", 
+            "width": "20%",
+            "render": function(data, type, row) {
+                return `<strong>${data}</strong>`;
+            }
+        },
+        { 
+            "data": "subject_name", 
+            "width": "15%",
+            "render": function(data, type, row) {
+                return data ? `<span class="badge bg-primary">${data}</span>` : 'N/A';
+            }
+        },
+        { 
+            "data": "notes", 
+            "width": "35%",
+            "render": function(data, type, row) {
+                if (data && data.length > 100) {
+                    return `<span title="${data}">${data.substring(0, 100)}...</span>`;
+                }
+                return data || 'N/A';
+            }
+        },
+        { 
+            "data": "notify_teacher", 
+            "width": "10%",
+            "render": function(data, type, row) {
+                if (data == 1 || data === true) {
+                    return '<span class="badge bg-success">Yes</span>';
+                } else {
+                    return '<span class="badge bg-secondary">No</span>';
+                }
+            }
+        },
+        { 
+            "data": "created_at", 
+            "width": "10%",
+            "render": function(data, type, row) {
+                if (data) {
+                    const date = new Date(data);
+                    return date.toLocaleDateString();
+                }
+                return 'N/A';
+            }
+        },
         { 
             "data": "actions", 
             "orderable": false,
             "width": "10%",
             "render": function(data, type, row) {
-                let actions = '';
+                let actions = '<div class="btn-group gap-1" role="group">';
                 
-                // Check permissions based on role
-                if (window.canEditInterventions || window.canDeleteInterventions) {
-                    actions = '<div class="btn-group gap-2" role="group">';
-                    
-                    // Edit button
-                    if (window.canEditInterventions) {
-                        actions += `
-                            <button class="btn btn-outline-primary" onclick="editIntervention(${row.id})" title="Edit">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                        `;
-                    }
-                    
-                    // Delete button
-                    if (window.canDeleteInterventions) {
-                        actions += `
-                            <button class="btn btn-outline-danger" onclick="deleteIntervention(${row.id})" title="Delete">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        `;
-                    }
-                    
-                    actions += '</div>';
+                // View Details button (always available)
+                actions += `
+                    <button class="btn btn-outline-info" onclick="viewIntervention(${data})" title="View Details">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                `;
+                
+                // Edit button (for admin/teacher)
+                if (window.canEditInterventions) {
+                    actions += `
+                        <button class="btn btn-outline-primary" onclick="editIntervention(${data})" title="Edit Intervention">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    `;
                 }
                 
+                // Delete button (only for admin)
+                if (window.canDeleteInterventions && window.isAdmin) {
+                    actions += `
+                        <button class="btn btn-outline-danger" onclick="deleteIntervention(${data})" title="Delete Intervention">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    `;
+                }
+                
+                actions += '</div>';
                 return actions;
             }
         }
     ],
-    "order": [[0, "desc"]],
+    "order": [[0, "asc"]],
     pageLength: 10,
     responsive: true,
     language: {
@@ -99,8 +147,16 @@ function setupModalEvents() {
 
   // Load data when modal is shown
   $("#interventionModal").on("shown.bs.modal", function () {
-    loadStudents();
-    CommonAPI.loadSubjects();
+    // Only load if not in edit mode
+    if (!currentInterventionEditId) {
+      loadStudents();
+      loadSubjects();
+    }
+  });
+  
+  // Clear intervention details modal content when closed
+  $('#interventionDetailsModal').on('hidden.bs.modal', function () {
+    document.getElementById('interventionDetailsContent').innerHTML = '';
   });
 
   // Form validation
@@ -119,7 +175,7 @@ function setupModalEvents() {
  * Load students for dropdown
  */
 function loadStudents() {
-  fetch("app/API/apiInterventions.php?action=get_students")
+  return fetch("app/API/apiInterventions.php?action=get_students")
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
@@ -135,9 +191,11 @@ function loadStudents() {
           });
         }
       }
+      return data;
     })
     .catch((error) => {
       console.error("Error loading students:", error);
+      throw error;
     });
 }
 
@@ -145,7 +203,7 @@ function loadStudents() {
  * Load subjects for dropdown
  */
 function loadSubjects() {
-  fetch("app/API/apiActivities.php?action=get_subjects")
+  return fetch("app/API/apiInterventions.php?action=get_subjects")
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
@@ -161,9 +219,11 @@ function loadSubjects() {
           });
         }
       }
+      return data;
     })
     .catch((error) => {
       console.error("Error loading subjects:", error);
+      throw error;
     });
 }
 
@@ -255,22 +315,28 @@ function editIntervention(id) {
       if (data.success) {
         const intervention = data.data;
 
-        // Populate form
-        $("#interventionId").val(intervention.id);
-        $("#student_id").val(intervention.student_id);
-        $("#subject_id").val(intervention.subject_id);
-        $("#notify_teacher").prop('checked', intervention.notify_teacher == 1);
-        $("#notes").val(intervention.notes);
-        $("#formAction").val("update_intervention");
+        // Load subjects and students for edit, then populate form
+        loadStudents().then(() => {
+          loadSubjects().then(() => {
+            // Set form values after dropdowns are populated
+            $("#interventionId").val(intervention.id);
+            $("#student_id").val(intervention.student_id);
+            $("#subject_id").val(intervention.subject_id);
+            $("#notify_teacher").prop('checked', intervention.notify_teacher == 1);
+            $("#notes").val(intervention.notes);
+            $("#formAction").val("update_intervention");
+              
+            // Update modal title and button text
+            $("#modalTitle").text("Edit Intervention");
+            $("#submitButtonText").text("Update");
 
-        // Update modal title
-        $("#modalTitle").text("Edit Intervention");
+            // Update student info
+            updateStudentInfo();
 
-        // Update student info
-        updateStudentInfo();
-
-        // Show modal
-        $("#interventionModal").modal("show");
+            // Show modal
+            $("#interventionModal").modal("show");
+          });
+        });
       } else {
         Swal.fire({
           icon: "error",
@@ -348,6 +414,7 @@ function resetInterventionForm() {
   $("#interventionId").val("");
   $("#formAction").val("create_intervention");
   $("#modalTitle").text("Add New Intervention");
+  $("#submitButtonText").text("Submit");
   $("#studentInfo").empty();
   currentInterventionEditId = null;
 }
@@ -488,7 +555,7 @@ function viewInterventionStatistics() {
 }
 
 /**
- * View intervention details (for students)
+ * View intervention details
  */
 function viewIntervention(id) {
   fetch(`app/API/apiInterventions.php?action=get_intervention&id=${id}`, {
@@ -498,48 +565,8 @@ function viewIntervention(id) {
   .then(data => {
     if (data.success) {
       const intervention = data.data;
-      Swal.fire({
-        title: 'Intervention Details',
-        html: `
-          <div class="text-start">
-            <div class="mb-3">
-              <strong>Student:</strong> ${intervention.student_name}
-            </div>
-            <div class="mb-3">
-              <strong>Course:</strong> ${intervention.course}
-            </div>
-            <div class="mb-3">
-              <strong>Year Level:</strong> ${intervention.year_level}
-            </div>
-            <div class="mb-3">
-              <strong>Subject:</strong> ${intervention.subject_name || 'No Subject'}
-            </div>
-            <div class="mb-3">
-              <strong>Notes:</strong>
-              <div class="mt-2 p-3 bg-light rounded">
-                ${intervention.notes.replace(/\n/g, '<br>')}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6">
-                <p><strong>Created by:</strong> ${intervention.created_by_username} (${intervention.created_by_role})</p>
-              </div>
-              <div class="col-md-6">
-                <p><strong>Created at:</strong> ${new Date(intervention.created_at).toLocaleString()}</p>
-              </div>
-            </div>
-          </div>
-        `,
-        icon: 'info',
-        confirmButtonText: 'Close',
-        width: '700px',
-        heightAuto: true,
-        allowOutsideClick: true,
-        scrollbarPadding: false,
-        customClass: {
-          popup: 'swal2-no-scroll'
-        }
-      });
+      populateInterventionDetailsModal(intervention);
+      $('#interventionDetailsModal').modal('show');
     } else {
       Swal.fire({
         icon: 'error',
@@ -556,6 +583,96 @@ function viewIntervention(id) {
       text: 'An error occurred while loading the intervention details.'
     });
   });
+}
+
+/**
+ * Populate intervention details modal
+ */
+function populateInterventionDetailsModal(intervention) {
+  const content = document.getElementById('interventionDetailsContent');
+  
+  // Get notify teacher badge
+  const notifyBadge = intervention.notify_teacher == 1 || intervention.notify_teacher === true 
+    ? '<span class="badge bg-success">Yes</span>' 
+    : '<span class="badge bg-secondary">No</span>';
+  
+  content.innerHTML = `
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <h6 class="card-title text-primary">
+              <i class="bi bi-person"></i> Student Information
+            </h6>
+            <div class="mb-2">
+              <strong>Student Name:</strong><br>
+              <span class="text-dark">${intervention.student_name}</span>
+            </div>
+            <div class="mb-2">
+              <strong>Course:</strong><br>
+              <span class="text-muted">${intervention.course || 'N/A'}</span>
+            </div>
+            <div class="mb-2">
+              <strong>Year Level:</strong><br>
+              <span class="text-muted">${intervention.year_level || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <h6 class="card-title text-success">
+              <i class="bi bi-book"></i> Intervention Details
+            </h6>
+            <div class="mb-2">
+              <strong>Subject:</strong><br>
+              <span class="badge bg-primary">${intervention.subject_name || 'N/A'}</span>
+            </div>
+            <div class="mb-2">
+              <strong>Notify Teacher:</strong><br>
+              ${notifyBadge}
+            </div>
+            <div class="mb-2">
+              <strong>Created:</strong><br>
+              <span class="text-muted">${new Date(intervention.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="row mt-3">
+      <div class="col-12">
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <h6 class="card-title text-info">
+              <i class="bi bi-chat-text"></i> Intervention Notes
+            </h6>
+            <div class="p-3 bg-white rounded border">
+              ${intervention.notes ? intervention.notes.replace(/\n/g, '<br>') : 'No notes provided'}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="alert alert-info mt-3">
+      <h6><i class="bi bi-info-circle"></i> Intervention Information</h6>
+      <ul class="mb-0">
+        <li>This intervention was created to address specific student needs</li>
+        <li>Notes contain detailed information about the intervention and its purpose</li>
+        <li>Teacher notification status indicates if relevant staff were alerted</li>
+        <li>All interventions are tracked for student progress monitoring</li>
+      </ul>
+    </div>
+  `;
 }
 
 /**

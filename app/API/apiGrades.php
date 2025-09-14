@@ -1,15 +1,15 @@
 <?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
-header('Access-Control-Allow-Headers: Content-Type');
 
 require_once '../Grades.php';
 require_once '../Permissions.php';
 
 // Check if user is logged in
-session_start();
-if (!isset($_SESSION['user'])) {
+if (!isset($_SESSION['user']) || empty($_SESSION['user'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit;
@@ -51,7 +51,7 @@ try {
                     'data' => $data
                 ]);
             } else {
-                // Admin/Teacher view - show all grades
+                // Admin/Teacher view - show all grades with comprehensive data
                 $draw = intval($_GET['draw'] ?? 1);
                 $start = intval($_GET['start'] ?? 0);
                 $length = intval($_GET['length'] ?? 10);

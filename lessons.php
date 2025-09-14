@@ -22,8 +22,8 @@ $username = $user['first_name'] . ' ' . $user['last_name'];
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
 
-// Check if user has permission to manage lessons
-if (!Permission::isAdminOrTeacher()) {
+// Check if user has permission to view lessons
+if (!Permission::canViewLessons()) {
     header('Location: index.php');
     exit();
 }
@@ -39,8 +39,10 @@ require_once __DIR__ . '/components/sideNav.php';
         <h1>
             <?php if (Permission::isAdmin()): ?>
             Lessons Management
-            <?php else: ?>
+            <?php elseif (Permission::isTeacher()): ?>
             Computer Programming 1 - Lessons
+            <?php else: ?>
+            Lessons
             <?php endif; ?>
         </h1>
         <nav>
@@ -60,12 +62,14 @@ require_once __DIR__ . '/components/sideNav.php';
                             <h5 class="card-title">
                                 <?php if (Permission::isAdmin()): ?>
                                 All Lessons
-                                <?php else: ?>
+                                <?php elseif (Permission::isTeacher()): ?>
                                 Computer Programming 1 Lessons
+                                <?php else: ?>
+                                Available Lessons
                                 <?php endif; ?>
                             </h5>
                             <div class="btn-group">
-                                <?php if (Permission::isAdminOrTeacher()): ?>
+                                <?php if (Permission::canAddLessons()): ?>
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                     data-bs-target="#lessonModal">
                                     Add Lesson
@@ -79,9 +83,7 @@ require_once __DIR__ . '/components/sideNav.php';
                             <table id="lessonsTable" class="table table-striped table-hover">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
                                         <th>Title</th>
-                                        <th>Subject</th>
                                         <th>Content</th>
                                         <th>Created</th>
                                         <th>Status</th>
@@ -160,11 +162,13 @@ require_once __DIR__ . '/components/sideNav.php';
 <!-- Pass permissions to JavaScript -->
 <script>
     window.currentUserRole = '<?php echo $userRole; ?>';
-    window.canAddLessons = <?php echo Permission::isAdminOrTeacher() ? 'true' : 'false'; ?>;
-    window.canEditLessons = <?php echo Permission::isAdminOrTeacher() ? 'true' : 'false'; ?>;
-    window.canDeleteLessons = <?php echo Permission::isAdmin() ? 'true' : 'false'; ?>;
+    window.canViewLessons = <?php echo Permission::canViewLessons() ? 'true' : 'false'; ?>;
+    window.canAddLessons = <?php echo Permission::canAddLessons() ? 'true' : 'false'; ?>;
+    window.canEditLessons = <?php echo Permission::canEditLessons() ? 'true' : 'false'; ?>;
+    window.canDeleteLessons = <?php echo Permission::canDeleteLessons() ? 'true' : 'false'; ?>;
     window.isAdmin = <?php echo Permission::isAdmin() ? 'true' : 'false'; ?>;
     window.isTeacher = <?php echo Permission::isTeacher() ? 'true' : 'false'; ?>;
+    window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
 </script>
 </body>
 

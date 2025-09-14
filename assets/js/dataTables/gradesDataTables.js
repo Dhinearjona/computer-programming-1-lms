@@ -46,15 +46,47 @@ function initializeGradesTable() {
         "columns": (function() {
             // Define columns based on user role
             if (window.isStudent) {
-                // Student view - only show grade columns
+                // Student view - simplified grade information
                 return [
-                    { "data": "subject_name", "width": "15%" },
-                    { "data": "semester_name", "width": "15%" },
-                    { "data": "grading_period_name", "width": "15%" },
-                    { "data": "activity_score", "width": "15%" },
-                    { "data": "quiz_score", "width": "15%" },
-                    { "data": "exam_score", "width": "15%" },
-                    { "data": "period_grade", "width": "10%" },
+                    { 
+                        "data": "grading_period_name", 
+                        "width": "20%",
+                        "render": function(data, type, row) {
+                            return `<span class="badge bg-info">${data}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "activity_score", 
+                        "width": "15%",
+                        "render": function(data, type, row) {
+                            return data ? `${data}` : '0';
+                        }
+                    },
+                    { 
+                        "data": "quiz_score", 
+                        "width": "15%",
+                        "render": function(data, type, row) {
+                            return data ? `${data}` : '0';
+                        }
+                    },
+                    { 
+                        "data": "exam_score", 
+                        "width": "15%",
+                        "render": function(data, type, row) {
+                            return data ? `${data}` : '0';
+                        }
+                    },
+                    { 
+                        "data": "period_grade", 
+                        "width": "15%",
+                        "render": function(data, type, row) {
+                            if (data && data > 0) {
+                                let badgeClass = data >= 75 ? 'badge bg-success' : 'badge bg-danger';
+                                return `<span class="${badgeClass}">${data}</span>`;
+                            }
+                            return '<span class="badge bg-light text-dark">0</span>';
+                        }
+                    },
                     { 
                         "data": "status", 
                         "orderable": false, 
@@ -78,7 +110,7 @@ function initializeGradesTable() {
                                     break;
                                 default:
                                     badgeClass = 'badge bg-secondary';
-                                    badgeText = data;
+                                    badgeText = data || 'Pending';
                             }
                             
                             return `<span class="${badgeClass}">${badgeText}</span>`;
@@ -88,12 +120,52 @@ function initializeGradesTable() {
             } else {
                 // Admin/Teacher view - simplified columns
                 return [
-                    { "data": "full_name", "width": "20%" },
-                    { "data": "grading_period_name", "width": "15%" },
-                    { "data": "activity_score", "width": "12%" },
-                    { "data": "quiz_score", "width": "12%" },
-                    { "data": "exam_score", "width": "12%" },
-                    { "data": "period_grade", "width": "12%" },
+                    { 
+                        "data": "full_name", 
+                        "width": "20%",
+                        "render": function(data, type, row) {
+                            return `<strong>${data}</strong>`;
+                        }
+                    },
+                    { 
+                        "data": "grading_period_name", 
+                        "width": "15%",
+                        "render": function(data, type, row) {
+                            return `<span class="badge bg-info">${data}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "activity_score", 
+                        "width": "12%",
+                        "render": function(data, type, row) {
+                            return data ? `${data}` : '0';
+                        }
+                    },
+                    { 
+                        "data": "quiz_score", 
+                        "width": "12%",
+                        "render": function(data, type, row) {
+                            return data ? `${data}` : '0';
+                        }
+                    },
+                    { 
+                        "data": "exam_score", 
+                        "width": "12%",
+                        "render": function(data, type, row) {
+                            return data ? `${data}` : '0';
+                        }
+                    },
+                    { 
+                        "data": "period_grade", 
+                        "width": "12%",
+                        "render": function(data, type, row) {
+                            if (data && data > 0) {
+                                let badgeClass = data >= 75 ? 'badge bg-success' : 'badge bg-danger';
+                                return `<span class="${badgeClass}">${data}</span>`;
+                            }
+                            return '<span class="badge bg-light text-dark">0</span>';
+                        }
+                    },
                     { 
                         "data": "status", 
                         "orderable": false, 
@@ -132,21 +204,23 @@ function initializeGradesTable() {
                             
                             // Check permissions based on role
                             if (window.canManageGrades) {
-                                actions = '<div class="btn-group gap-2" role="group">';
+                                actions = '<div class="btn-group gap-1" role="group">';
                                 
                                 // Edit button
                                 actions += `
-                                    <button class="btn btn-outline-primary" onclick="editGrade(${row.id})" title="Edit">
+                                    <button class="btn btn-outline-primary" onclick="editGrade(${row.id})" title="Edit Grade">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                 `;
                                 
-                                // Delete button
-                                actions += `
-                                    <button class="btn btn-outline-danger" onclick="deleteGrade(${row.id})" title="Delete">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                `;
+                                // Delete button (only for admin)
+                                if (window.isAdmin) {
+                                    actions += `
+                                        <button class="btn btn-outline-danger" onclick="deleteGrade(${row.id})" title="Delete Grade">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    `;
+                                }
                                 
                                 actions += '</div>';
                             }
@@ -157,7 +231,7 @@ function initializeGradesTable() {
                 ];
             }
         })(),
-        "order": window.isStudent ? [[4, "desc"]] : [[0, "desc"]],
+        "order": window.isStudent ? [[0, "asc"]] : [[0, "asc"]],
         "pageLength": 10,
         "responsive": true,
         "language": {
@@ -509,14 +583,16 @@ function loadGradingPeriods() {
     .then(data => {
         if (data.success) {
             const periodSelect = document.getElementById('grading_period_id');
-            periodSelect.innerHTML = '<option value="">Select Grading Period</option>';
-            
-            data.data.forEach(period => {
-                const option = document.createElement('option');
-                option.value = period.id;
-                option.textContent = `${period.name} (${period.semester_name} ${period.academic_year})`;
-                periodSelect.appendChild(option);
-            });
+            if (periodSelect) {
+                periodSelect.innerHTML = '<option value="">Select Grading Period</option>';
+                
+                data.data.forEach(period => {
+                    const option = document.createElement('option');
+                    option.value = period.id;
+                    option.textContent = `${period.name} (${period.semester_name} ${period.academic_year})`;
+                    periodSelect.appendChild(option);
+                });
+            }
         }
     })
     .catch(error => {

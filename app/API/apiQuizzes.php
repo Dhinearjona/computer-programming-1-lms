@@ -14,9 +14,9 @@ require_once __DIR__ . '/../Db.php';
 require_once __DIR__ . '/../Quizzes.php';
 require_once __DIR__ . '/../Permissions.php';
 
-// Check permissions - admin, teacher, and students can access quizzes
+// Check permissions - all roles can view quizzes, but only admin/teacher can manage them
 $userRole = $_SESSION['user']['role'];
-if ($userRole !== 'admin' && $userRole !== 'teacher' && $userRole !== 'student') {
+if (!Permission::canManageQuizzes() && !Permission::isStudent()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Forbidden']);
     exit();
@@ -46,13 +46,14 @@ try {
                 
                 $data = [
                     'lesson_id' => (int)($_POST['lesson_id'] ?? 0),
+                    'grading_period_id' => (int)($_POST['grading_period_id'] ?? 0),
                     'title' => trim($_POST['title'] ?? ''),
                     'max_score' => (int)($_POST['max_score'] ?? 100),
                     'time_limit_minutes' => (int)($_POST['time_limit_minutes'] ?? 0) ?: null
                 ];
                 
-                if (empty($data['title']) || $data['lesson_id'] <= 0) {
-                    throw new Exception('Title and Lesson are required');
+                if (empty($data['title']) || $data['lesson_id'] <= 0 || $data['grading_period_id'] <= 0) {
+                    throw new Exception('Title, Lesson, and Grading Period are required');
                 }
                 
                 $result = $quizzesModel->create($data);
@@ -68,12 +69,13 @@ try {
                 $id = (int)($_POST['id'] ?? 0);
                 $data = [
                     'lesson_id' => (int)($_POST['lesson_id'] ?? 0),
+                    'grading_period_id' => (int)($_POST['grading_period_id'] ?? 0),
                     'title' => trim($_POST['title'] ?? ''),
                     'max_score' => (int)($_POST['max_score'] ?? 100),
                     'time_limit_minutes' => (int)($_POST['time_limit_minutes'] ?? 0) ?: null
                 ];
                 
-                if (empty($data['title']) || $data['lesson_id'] <= 0 || $id <= 0) {
+                if (empty($data['title']) || $data['lesson_id'] <= 0 || $data['grading_period_id'] <= 0 || $id <= 0) {
                     throw new Exception('Invalid data provided');
                 }
                 
@@ -206,6 +208,18 @@ try {
                 $stmt = $pdo->query("SELECT id, title FROM lessons ORDER BY title");
                 $lessons = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 echo json_encode(['success' => true, 'data' => $lessons]);
+                break;
+                
+            case 'get_grading_periods':
+                $stmt = $pdo->query("
+                    SELECT gp.id, gp.name, s.name as semester_name, s.academic_year 
+                    FROM grading_periods gp 
+                    JOIN semesters s ON gp.semester_id = s.id 
+                    WHERE gp.status = 'active' 
+                    ORDER BY s.academic_year DESC, gp.name
+                ");
+                $gradingPeriods = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                echo json_encode(['success' => true, 'data' => $gradingPeriods]);
                 break;
                 
             default:

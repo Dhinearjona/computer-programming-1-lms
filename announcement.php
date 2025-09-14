@@ -23,6 +23,7 @@ $username = $user['first_name'] . ' ' . $user['last_name'];
 require_once __DIR__ . '/app/Permissions.php';
 
 // Check if user has permission to view announcements
+// All roles can view announcements, but only admin/teacher can manage them
 if (!Permission::canManageAnnouncements() && !Permission::isStudent()) {
     header('Location: index.php');
     exit();
@@ -37,12 +38,12 @@ require_once __DIR__ . '/components/sideNav.php';
 <main id="main" class="main">
     <div class="pagetitle">
         <h1>
-            <?php if (Permission::isTeacher()): ?>
+            <?php if (Permission::isAdmin()): ?>
+            Announcements Management
+            <?php elseif (Permission::isTeacher()): ?>
             My Announcements Management
             <?php elseif (Permission::isStudent()): ?>
             Announcements
-            <?php else: ?>
-            Announcements Management
             <?php endif; ?>
         </h1>
         <nav>
@@ -60,18 +61,23 @@ require_once __DIR__ . '/components/sideNav.php';
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title">
-                                <?php if (Permission::isTeacher()): ?>
-                                My Announcements List
+                                <?php if (Permission::isAdmin()): ?>
+                                All Announcements
+                                <?php elseif (Permission::isTeacher()): ?>
+                                My Announcements
                                 <?php elseif (Permission::isStudent()): ?>
                                 Latest Announcements
-                                <?php else: ?>
-                                Announcements List
                                 <?php endif; ?>
                             </h5>
-                            <div class="btn-group">
+                            <div class="btn-group gap-2">
+                                <button type="button" class="btn btn-outline-info"
+                                    onclick="refreshAnnouncementsTable()" title="Refresh">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
                                 <?php if (Permission::canAddAnnouncements()): ?>
-                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#announcementModal">
-                                    Add New Announcement
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                    data-bs-target="#announcementModal">
+                                    <i class="bi bi-plus-circle"></i> Add New Announcement
                                 </button>
                                 <?php endif; ?>
                             </div>
@@ -89,11 +95,10 @@ require_once __DIR__ . '/components/sideNav.php';
                                         <th>Message</th>
                                         <?php if (!Permission::isStudent()): ?>
                                         <th>Created By</th>
+                                        <th>Role</th>
                                         <?php endif; ?>
                                         <th>Created At</th>
-                                        <?php if (Permission::canManageAnnouncements()): ?>
                                         <th>Actions</th>
-                                        <?php endif; ?>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -106,6 +111,28 @@ require_once __DIR__ . '/components/sideNav.php';
         </div>
     </section>
 </main>
+
+<!-- Announcement Details Modal -->
+<div class="modal fade" id="announcementDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="announcementDetailsTitle">Announcement Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="announcementDetailsContent">
+                    <!-- Announcement details will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Announcement Modal -->
 <?php if (Permission::canAddAnnouncements()): ?>
@@ -120,19 +147,29 @@ require_once __DIR__ . '/components/sideNav.php';
                 <form id="announcementForm">
                     <input type="hidden" id="announcementId" name="id">
                     <input type="hidden" name="action" id="formAction" value="create_announcement">
-                    
+
                     <div class="mb-3">
-                        <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="title" name="title" maxlength="255" required>
-                        <div class="form-text" id="titleCount"></div>
+                        <label for="title" class="form-label">
+                            <i class="bi bi-card-heading"></i> Title <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="title" name="title" maxlength="255"
+                            placeholder="Enter announcement title..." required>
+                        <div class="form-text">
+                            <small class="text-muted" id="titleCount">0/255 characters</small>
+                        </div>
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label for="message" class="form-label">Message <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="message" name="message" rows="8" required></textarea>
-                        <div class="form-text" id="messageCount"></div>
+                        <label for="message" class="form-label">
+                            <i class="bi bi-chat-text"></i> Message <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="message" name="message" rows="8" placeholder="Enter announcement message..."
+                            required></textarea>
+                        <div class="form-text">
+                            <small class="text-muted" id="messageCount">0 characters</small>
+                        </div>
                     </div>
-                    
+
                     <div class="alert alert-info">
                         <h6><i class="bi bi-info-circle"></i> Announcement Guidelines</h6>
                         <ul class="mb-0">
@@ -145,8 +182,12 @@ require_once __DIR__ . '/components/sideNav.php';
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveAnnouncement()">Submit</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveAnnouncement()">
+                    <i class="bi bi-check-circle"></i> <span id="submitButtonText">Create Announcement</span>
+                </button>
             </div>
         </div>
     </div>
@@ -188,6 +229,7 @@ require_once __DIR__ . '/components/sideNav.php';
     window.isAdmin = <?php echo Permission::isAdmin() ? 'true' : 'false'; ?>;
     window.isTeacher = <?php echo Permission::isTeacher() ? 'true' : 'false'; ?>;
     window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
+    window.userId = <?php echo $user['id']; ?>;
 </script>
 
 <?php require_once __DIR__ . '/components/footer.php'; ?>

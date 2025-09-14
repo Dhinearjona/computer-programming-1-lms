@@ -39,78 +39,99 @@ function initializeMyQuizzesTable() {
                 }
             },
             { 
-                "data": "subject_name", 
+                "data": "lesson_title", 
                 "width": "15%",
                 "render": function(data, type, row) {
-                    return `<span class="badge bg-primary">${data}</span>`;
+                    return data || 'No lesson';
                 }
             },
             { 
-                "data": "description", 
-                "width": "25%",
+                "data": "grading_period_name", 
+                "width": "12%",
                 "render": function(data, type, row) {
-                    if (data && data.length > 50) {
-                        return data.substring(0, 50) + '...';
+                    if (data) {
+                        return `<span class="badge bg-info">${data}</span>`;
                     }
-                    return data || 'No description';
+                    return '';
                 }
             },
             { 
-                "data": "time_limit", 
+                "data": "time_limit_minutes", 
                 "width": "10%",
                 "render": function(data, type, row) {
-                    return data ? `${data} minutes` : 'No limit';
+                    return data ? `${data} min` : 'No limit';
                 }
             },
             { 
                 "data": "max_score", 
-                "width": "10%",
+                "width": "8%",
                 "render": function(data, type, row) {
-                    return data ? `${data} points` : '0 points';
+                    return data ? `${data}` : '0';
+                }
+            },
+            { 
+                "data": "my_score", 
+                "width": "8%",
+                "render": function(data, type, row) {
+                    if (row.my_score !== null && row.my_score !== undefined) {
+                        return `<span class="badge bg-primary">${row.my_score}</span>`;
+                    } else {
+                        return '<span class="badge bg-light text-dark">Not taken</span>';
+                    }
                 }
             },
             {
-                "data": null,
+                "data": "quiz_status",
                 "orderable": false,
                 "width": "10%",
                 "render": function(data, type, row) {
                     let badgeClass = '';
                     let badgeText = '';
                     
-                    // Handle undefined or null status
-                    const status = row.status || 'active';
-                    
-                    switch(status) {
-                        case 'active':
-                            badgeClass = 'badge bg-success';
-                            badgeText = 'Active';
-                            break;
-                        case 'inactive':
-                            badgeClass = 'badge bg-secondary';
-                            badgeText = 'Inactive';
-                            break;
-                        case 'draft':
-                            badgeClass = 'badge bg-warning';
-                            badgeText = 'Draft';
-                            break;
-                        default:
-                            badgeClass = 'badge bg-success';
-                            badgeText = 'Active';
+                    // Determine status based on whether quiz is taken and grading period
+                    if (row.my_score !== null && row.my_score !== undefined) {
+                        badgeClass = 'badge bg-success';
+                        badgeText = 'Completed';
+                    } else if (row.grading_period_status === 'active') {
+                        badgeClass = 'badge bg-primary';
+                        badgeText = 'Available';
+                    } else if (row.grading_period_status === 'completed') {
+                        badgeClass = 'badge bg-warning';
+                        badgeText = 'Closed';
+                    } else {
+                        badgeClass = 'badge bg-secondary';
+                        badgeText = 'Pending';
                     }
                     
                     return `<span class="${badgeClass}">${badgeText}</span>`;
                 }
             },
             {
-                "data": null,
+                "data": "actions",
                 "orderable": false,
-                "width": "10%",
+                "width": "15%",
                 "render": function(data, type, row) {
-                    return `
+                    let actions = '<div class="btn-group gap-1" role="group">';
+                    
+                    // View Details button (always available)
+                    actions += `
                         <button class="btn btn-outline-info" onclick="viewQuizDetails(${row.id})" title="View Details">
                             <i class="bi bi-eye"></i>
                         </button>
                     `;
+                    
+                    // Take Quiz button (only if not taken and grading period is active)
+                    if (row.my_score === null && row.my_score === undefined && 
+                        row.grading_period_status === 'active' && window.canTakeQuizzes) {
+                        actions += `
+                            <button class="btn btn-outline-primary" onclick="takeQuiz(${row.id})" title="Take Quiz">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                        `;
+                    }
+                    
+                    actions += '</div>';
+                    return actions;
                 }
             }
         ],
@@ -141,24 +162,40 @@ function viewQuizDetails(id) {
                         <p>${quiz.title}</p>
                     </div>
                     <div class="col-md-6">
-                        <h6><strong>Subject:</strong></h6>
-                        <p><span class="badge bg-primary">${quiz.subject_name}</span></p>
+                        <h6><strong>Lesson:</strong></h6>
+                        <p>${quiz.lesson_title || 'No lesson'}</p>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-6">
-                        <h6><strong>Time Limit:</strong></h6>
-                        <p>${quiz.time_limit ? quiz.time_limit + ' minutes' : 'No time limit'}</p>
+                        <h6><strong>Grading Period:</strong></h6>
+                        <p><span class="badge bg-info">${quiz.grading_period_name || 'Unknown'}</span></p>
                     </div>
+                    <div class="col-md-6">
+                        <h6><strong>Time Limit:</strong></h6>
+                        <p>${quiz.time_limit_minutes ? quiz.time_limit_minutes + ' minutes' : 'No time limit'}</p>
+                    </div>
+                </div>
+                <div class="row">
                     <div class="col-md-6">
                         <h6><strong>Max Score:</strong></h6>
                         <p>${quiz.max_score || 0} points</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><strong>My Score:</strong></h6>
+                        <p>${quiz.my_score !== null && quiz.my_score !== undefined ? 
+                            `<span class="badge bg-primary">${quiz.my_score}</span>` : 
+                            '<span class="badge bg-light text-dark">Not taken</span>'}</p>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-6">
                         <h6><strong>Status:</strong></h6>
-                        <p><span class="badge ${(quiz.status || 'active') === 'active' ? 'bg-success' : (quiz.status || 'active') === 'inactive' ? 'bg-secondary' : 'bg-warning'}">${quiz.status || 'Active'}</span></p>
+                        <p>${quiz.my_score !== null && quiz.my_score !== undefined ? 
+                            '<span class="badge bg-success">Completed</span>' : 
+                            quiz.grading_period_status === 'active' ? 
+                            '<span class="badge bg-primary">Available</span>' : 
+                            '<span class="badge bg-warning">Closed</span>'}</p>
                     </div>
                     <div class="col-md-6">
                         <h6><strong>Created:</strong></h6>
@@ -198,6 +235,36 @@ function viewQuizDetails(id) {
             title: 'Error!',
             text: 'Failed to load quiz details.'
         });
+    });
+}
+
+/**
+ * Take Quiz
+ */
+function takeQuiz(quizId) {
+    Swal.fire({
+        title: 'Take Quiz',
+        text: 'Are you ready to start this quiz? Make sure you have a stable internet connection.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Start Quiz',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // For now, show a placeholder message
+            // In a real implementation, this would redirect to a quiz taking page
+            Swal.fire({
+                title: 'Quiz Taking',
+                text: 'Quiz taking functionality will be implemented in the next phase. For now, you can view quiz details.',
+                icon: 'info',
+                confirmButtonText: 'OK'
+            });
+            
+            // Alternative: redirect to quiz taking page
+            // window.location.href = `take-quiz.php?id=${quizId}`;
+        }
     });
 }
 

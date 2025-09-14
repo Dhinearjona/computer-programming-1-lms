@@ -17,10 +17,10 @@ if (!isset($_SESSION['user']) || empty($_SESSION['user'])) {
 $userRole = $_SESSION['user']['role'];
 $userId = $_SESSION['user']['id'];
 
-// Check if user is student
-if (!Permission::isStudent()) {
+// Check if user can view their own quizzes
+if (!Permission::canViewOwnQuizzes()) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Forbidden: Only students can access this resource.']);
+    echo json_encode(['success' => false, 'message' => 'Forbidden: Access denied.']);
     exit();
 }
 
@@ -38,27 +38,29 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         switch ($_GET['action']) {
             case 'datatable':
-                // Get quizzes for the student's subject (Computer Programming 1)
-                $quizzes = $quizzesModel->getAll();
+                // Get quizzes with lesson and grading period information
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        q.id,
+                        q.title,
+                        q.max_score,
+                        q.time_limit_minutes,
+                        q.created_at,
+                        l.title as lesson_title,
+                        gp.name as grading_period_name,
+                        gp.status as grading_period_status,
+                        qr.score as my_score
+                    FROM quizzes q
+                    INNER JOIN lessons l ON q.lesson_id = l.id
+                    INNER JOIN grading_periods gp ON q.grading_period_id = gp.id
+                    LEFT JOIN quiz_results qr ON q.id = qr.quiz_id AND qr.student_id = ?
+                    WHERE l.subject_id = 1
+                    ORDER BY q.created_at DESC
+                ");
+                $stmt->execute([$studentId]);
+                $quizzes = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 
-                // Filter quizzes for the student's subject
-                $studentQuizzes = [];
-                foreach ($quizzes as $quiz) {
-                    // Only show quizzes for Computer Programming 1 (subject_id = 1)
-                    if ($quiz['subject_id'] == 1) {
-                        $studentQuizzes[] = [
-                            'id' => $quiz['id'],
-                            'title' => $quiz['title'],
-                            'subject_name' => $quiz['subject_name'],
-                            'description' => $quiz['description'] ?? 'No description',
-                            'time_limit' => $quiz['time_limit_minutes'],
-                            'max_score' => $quiz['max_score'],
-                            'status' => 'active' // Default status since quizzes table doesn't have status column
-                        ];
-                    }
-                }
-                
-                echo json_encode(['data' => $studentQuizzes]);
+                echo json_encode(['data' => $quizzes]);
                 break;
                 
             case 'get_quiz':
@@ -68,14 +70,31 @@ try {
                     throw new Exception('Invalid quiz ID');
                 }
                 
-                $quiz = $quizzesModel->getById($id);
-                if (!$quiz) {
-                    throw new Exception('Quiz not found');
-                }
+                // Get quiz with lesson and grading period information
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        q.id,
+                        q.title,
+                        q.max_score,
+                        q.time_limit_minutes,
+                        q.created_at,
+                        l.title as lesson_title,
+                        l.content as lesson_content,
+                        gp.name as grading_period_name,
+                        gp.status as grading_period_status,
+                        qr.score as my_score,
+                        qr.taken_at
+                    FROM quizzes q
+                    INNER JOIN lessons l ON q.lesson_id = l.id
+                    INNER JOIN grading_periods gp ON q.grading_period_id = gp.id
+                    LEFT JOIN quiz_results qr ON q.id = qr.quiz_id AND qr.student_id = ?
+                    WHERE q.id = ? AND l.subject_id = 1
+                ");
+                $stmt->execute([$studentId, $id]);
+                $quiz = $stmt->fetch(PDO::FETCH_ASSOC);
                 
-                // Ensure the quiz belongs to the student's enrolled subjects
-                if ($quiz['subject_id'] != 1) {
-                    throw new Exception('Forbidden: You do not have access to this quiz.');
+                if (!$quiz) {
+                    throw new Exception('Quiz not found or access denied');
                 }
                 
                 echo json_encode(['success' => true, 'data' => $quiz]);

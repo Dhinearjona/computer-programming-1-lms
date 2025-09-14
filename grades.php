@@ -37,12 +37,12 @@ require_once __DIR__ . '/components/sideNav.php';
 <main id="main" class="main">
     <div class="pagetitle">
         <h1>
-            <?php if (Permission::isTeacher()): ?>
-            My Grades Management
+            <?php if (Permission::isAdmin()): ?>
+            Grades Management
+            <?php elseif (Permission::isTeacher()): ?>
+            Student Grades Management
             <?php elseif (Permission::isStudent()): ?>
             My Grades
-            <?php else: ?>
-            Grades Management
             <?php endif; ?>
         </h1>
         <nav>
@@ -60,15 +60,19 @@ require_once __DIR__ . '/components/sideNav.php';
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title">
-                                <?php if (Permission::isTeacher()): ?>
-                                My Students Grades
+                                <?php if (Permission::isAdmin()): ?>
+                                All Student Grades
+                                <?php elseif (Permission::isTeacher()): ?>
+                                My Students' Grades
                                 <?php elseif (Permission::isStudent()): ?>
-                                My Grades
-                                <?php else: ?>
-                                Grades List
+                                My Academic Grades
                                 <?php endif; ?>
                             </h5>
                             <div class="btn-group gap-2">
+                                <button type="button" class="btn btn-outline-info" onclick="refreshGradesTable()"
+                                    title="Refresh">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
                                 <?php if (Permission::canManageGrades()): ?>
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                     data-bs-target="#gradeModal">
@@ -84,8 +88,6 @@ require_once __DIR__ . '/components/sideNav.php';
                                 <thead>
                                     <tr>
                                         <?php if (Permission::isStudent()): ?>
-                                        <th>Subject</th>
-                                        <th>Semester</th>
                                         <th>Grading Period</th>
                                         <th>Activity Score</th>
                                         <th>Quiz Score</th>
@@ -93,7 +95,7 @@ require_once __DIR__ . '/components/sideNav.php';
                                         <th>Period Grade</th>
                                         <th>Status</th>
                                         <?php else: ?>
-                                        <th>Full Name</th>
+                                        <th>Student Name</th>
                                         <th>Grading Period</th>
                                         <th>Activity Score</th>
                                         <th>Quiz Score</th>
@@ -177,8 +179,8 @@ require_once __DIR__ . '/components/sideNav.php';
                         <div class="col-md-4">
                             <label for="quiz_score" class="form-label">Quiz Score <span
                                     class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="quiz_score" name="quiz_score" min="0"
-                                max="100" step="0.01" placeholder="0.00">
+                            <input type="number" class="form-control" id="quiz_score" name="quiz_score"
+                                min="0" max="100" step="0.01" placeholder="0.00">
                         </div>
                         <div class="col-md-4">
                             <label for="exam_score" class="form-label">Exam Score <span
@@ -192,8 +194,8 @@ require_once __DIR__ . '/components/sideNav.php';
                         <div class="col-md-6">
                             <label for="period_grade" class="form-label">Period Grade <span
                                     class="text-danger">*</span></label>
-                            <input type="text" class="form-control bg-light" id="period_grade" name="period_grade"
-                                placeholder="0.00" readonly style="cursor: not-allowed;">
+                            <input type="text" class="form-control bg-light" id="period_grade"
+                                name="period_grade" placeholder="0.00" readonly style="cursor: not-allowed;">
                             <div class="form-text">Automatically calculated: Activity (40%) + Quiz (30%) + Exam (30%)
                             </div>
                         </div>
@@ -204,8 +206,9 @@ require_once __DIR__ . '/components/sideNav.php';
                             </button>
                         </div>
                         <div class="col-md-3">
-                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control bg-light" id="status_display" readonly 
+                            <label for="status" class="form-label">Status <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control bg-light" id="status_display" readonly
                                 placeholder="Pending" style="cursor: not-allowed;">
                             <input type="hidden" id="status" name="status" value="pending">
                             <div class="form-text">Automatically set based on grade</div>
@@ -219,7 +222,7 @@ require_once __DIR__ . '/components/sideNav.php';
                             <li><strong>Quiz Score:</strong> 30% of period grade</li>
                             <li><strong>Exam Score:</strong> 30% of period grade</li>
                             <li><strong>Period Grade:</strong> Automatically calculated based on weighted average</li>
-                            <li><strong>Status:</strong> Automatically set (Pass ≥75, Fail <75, Pending = 0)</li>
+                            <li><strong>Status:</strong> Automatically set (Pass ≥75, Fail <75, Pending=0)</li>
                         </ul>
                     </div>
                 </form>
@@ -266,6 +269,7 @@ require_once __DIR__ . '/components/sideNav.php';
     window.isAdmin = <?php echo Permission::isAdmin() ? 'true' : 'false'; ?>;
     window.isTeacher = <?php echo Permission::isTeacher() ? 'true' : 'false'; ?>;
     window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
+    window.userId = <?php echo $user['id']; ?>;
 </script>
 
 <?php require_once __DIR__ . '/components/footer.php'; ?>

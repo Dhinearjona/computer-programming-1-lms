@@ -22,8 +22,8 @@ $username = $user['first_name'] . ' ' . $user['last_name'];
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
 
-// Check if user is student
-if (!Permission::isStudent()) {
+// Check if user can view their own activities
+if (!Permission::canViewOwnActivities()) {
     header('Location: index.php');
     exit();
 }
@@ -69,8 +69,9 @@ require_once __DIR__ . '/components/sideNav.php';
                                         <th>Subject</th>
                                         <th>Description</th>
                                         <th>Due Date</th>
-                                        <th>Submission</th>
-                                        <th>Status</th>
+                                        <th>Grading Period</th>
+                                        <th>Submission Status</th>
+                                        <th>Grade</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -118,17 +119,31 @@ require_once __DIR__ . '/components/sideNav.php';
                     <input type="hidden" id="submissionActivityId" name="activity_id">
                     <input type="hidden" id="submissionAction" name="action" value="submit_activity">
 
+                    <!-- Activity Info Display -->
+                    <div class="mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title" id="submissionActivityTitle">Activity Title</h6>
+                                <p class="card-text" id="submissionActivityDescription">Activity Description</p>
+                                <small class="text-muted">
+                                    <strong>Due Date:</strong> <span id="submissionDueDate"></span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label for="submissionLink" class="form-label">
-                            <i class="bi bi-link-45deg"></i> Submission Link
+                            Submission Link <span class="text-danger">*</span>
                         </label>
                         <input type="url" class="form-control" id="submissionLink" name="submission_link"
                             placeholder="https://drive.google.com/file/d/..." required>
+
                     </div>
 
                     <div class="mb-3">
                         <label for="submissionText" class="form-label">
-                            <i class="bi bi-chat-text"></i> Additional Notes (Optional)
+                            Additional Notes (Optional)
                         </label>
                         <textarea class="form-control" id="submissionText" name="submission_text" rows="3"
                             placeholder="Add any additional notes or comments about your submission..."></textarea>
@@ -136,14 +151,14 @@ require_once __DIR__ . '/components/sideNav.php';
 
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Note:</strong> You can submit and unsubmit your work until the due date.
+                        <strong>Note:</strong> You can submit and update your work until the due date.
                         Make sure your link is accessible and contains your completed work.
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitActivity()">
+                <button type="button" class="btn btn-primary" onclick="submitActivityForm()">
                     Submit
                 </button>
             </div>
@@ -158,6 +173,8 @@ require_once __DIR__ . '/components/sideNav.php';
 <script>
     window.currentUserRole = '<?php echo $userRole; ?>';
     window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
+    window.canViewOwnActivities = <?php echo Permission::canViewOwnActivities() ? 'true' : 'false'; ?>;
+    window.canSubmitActivities = <?php echo Permission::canSubmitActivities() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
 </script>
 

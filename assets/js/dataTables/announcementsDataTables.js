@@ -33,11 +33,32 @@ function initializeAnnouncementsTable() {
         "columns": (function() {
             // Define columns based on user role
             if (window.currentUserRole === 'student') {
-                // Student view - no ID, no Created By, with View action
+                // Student view - simplified columns with view action
                 return [
-                    { "data": "title", "width": "30%" },
-                    { "data": "message", "width": "45%" },
-                    { "data": "created_at", "width": "15%" },
+                    { 
+                        "data": "title", 
+                        "width": "30%",
+                        "render": function(data, type, row) {
+                            return `<strong>${data}</strong>`;
+                        }
+                    },
+                    { 
+                        "data": "message", 
+                        "width": "45%",
+                        "render": function(data, type, row) {
+                            if (data && data.length > 100) {
+                                return data.substring(0, 100) + '...';
+                            }
+                            return data || 'No message';
+                        }
+                    },
+                    { 
+                        "data": "created_at", 
+                        "width": "15%",
+                        "render": function(data, type, row) {
+                            return data || 'N/A';
+                        }
+                    },
                     { 
                         "data": "actions", 
                         "orderable": false,
@@ -52,52 +73,110 @@ function initializeAnnouncementsTable() {
                     }
                 ];
             } else {
-                // Admin/Teacher view - full columns with actions
+                // Admin/Teacher view - comprehensive columns with actions
                 return [
-                    { "data": "id", "width": "5%" },
-                    { "data": "title", "width": "25%" },
-                    { "data": "message", "width": "35%" },
-                    { "data": "created_by", "width": "15%" },
-                    { "data": "created_at", "width": "10%" },
+                    { 
+                        "data": "id", 
+                        "width": "5%",
+                        "render": function(data, type, row) {
+                            return `<span class="badge bg-secondary">${data}</span>`;
+                        }
+                    },
+                    { 
+                        "data": "title", 
+                        "width": "20%",
+                        "render": function(data, type, row) {
+                            return `<strong>${data}</strong>`;
+                        }
+                    },
+                    { 
+                        "data": "message", 
+                        "width": "30%",
+                        "render": function(data, type, row) {
+                            if (data && data.length > 80) {
+                                return data.substring(0, 80) + '...';
+                            }
+                            return data || 'No message';
+                        }
+                    },
+                    { 
+                        "data": "created_by", 
+                        "width": "15%",
+                        "render": function(data, type, row) {
+                            return data || 'System';
+                        }
+                    },
+                    { 
+                        "data": "created_by_role", 
+                        "width": "10%",
+                        "render": function(data, type, row) {
+                            if (data) {
+                                let badgeClass = '';
+                                switch(data) {
+                                    case 'admin':
+                                        badgeClass = 'badge bg-danger';
+                                        break;
+                                    case 'teacher':
+                                        badgeClass = 'badge bg-primary';
+                                        break;
+                                    case 'student':
+                                        badgeClass = 'badge bg-success';
+                                        break;
+                                    default:
+                                        badgeClass = 'badge bg-secondary';
+                                }
+                                return `<span class="${badgeClass}">${data}</span>`;
+                            }
+                            return '<span class="badge bg-secondary">Unknown</span>';
+                        }
+                    },
+                    { 
+                        "data": "created_at", 
+                        "width": "10%",
+                        "render": function(data, type, row) {
+                            return data || 'N/A';
+                        }
+                    },
                     { 
                         "data": "actions", 
                         "orderable": false,
                         "width": "10%",
                         "render": function(data, type, row) {
-                            let actions = '';
+                            let actions = '<div class="btn-group gap-1" role="group">';
                             
-                            // Check permissions based on role
-                            if (window.canEditAnnouncements || window.canDeleteAnnouncements) {
-                                actions = '<div class="btn-group gap-2" role="group">';
-                                
-                                // Edit button - Admin and Teacher can edit
-                                if (window.canEditAnnouncements) {
-                                    actions += `
-                                        <button class="btn btn-outline-primary" onclick="editAnnouncement(${row.id})" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                    `;
-                                }
-                                
-                                // Delete button - Only Admin can delete
-                                if (window.canDeleteAnnouncements) {
-                                    actions += `
-                                        <button class="btn btn-outline-danger" onclick="deleteAnnouncement(${row.id})" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    `;
-                                }
-                                
-                                actions += '</div>';
+                            // View button (always available)
+                            actions += `
+                                <button class="btn btn-outline-info" onclick="viewAnnouncement(${row.id})" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            `;
+                            
+                            // Edit button - Admin and Teacher can edit
+                            if (window.canEditAnnouncements) {
+                                actions += `
+                                    <button class="btn btn-outline-primary" onclick="editAnnouncement(${row.id})" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                `;
                             }
                             
+                            // Delete button - Only Admin can delete
+                            if (window.canDeleteAnnouncements) {
+                                actions += `
+                                    <button class="btn btn-outline-danger" onclick="deleteAnnouncement(${row.id})" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                `;
+                            }
+                            
+                            actions += '</div>';
                             return actions;
                         }
                     }
                 ];
             }
         })(),
-        "order": window.currentUserRole === 'student' ? [[2, "desc"]] : [[0, "desc"]],
+        "order": window.currentUserRole === 'student' ? [[2, "desc"]] : [[5, "desc"]],
         "pageLength": 10,
         "responsive": true,
         "language": {
@@ -144,6 +223,12 @@ function setupModalEvents() {
     $('#message').on('input', function() {
         const length = $(this).val().length;
         $('#messageCount').text(`${length} characters`);
+    });
+    
+    // Reset announcement details modal when closed
+    $('#announcementDetailsModal').on('hidden.bs.modal', function () {
+        document.getElementById('announcementDetailsTitle').textContent = 'Announcement Details';
+        document.getElementById('announcementDetailsContent').innerHTML = '';
     });
 }
 
@@ -302,41 +387,82 @@ function viewAnnouncement(id) {
     .then(data => {
         if (data.success) {
             const announcement = data.data;
-            Swal.fire({
-                title: announcement.title,
-                html: `
-                    <div class="text-start">
+            
+            // Update modal title
+            document.getElementById('announcementDetailsTitle').textContent = announcement.title;
+            
+            // Create content for the modal
+            let content = `
+                <div class="row">
+                    <div class="col-12">
                         <div class="mb-3">
-                            <strong>Message:</strong>
-                            <div class="mt-2 p-3 bg-light rounded">
-                                ${announcement.message.replace(/\n/g, '<br>')}
-                            </div>
+                            <h6><i class="bi bi-card-heading"></i> <strong>Title:</strong></h6>
+                            <p class="fs-5 fw-bold text-primary">${announcement.title}</p>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Created by:</strong> ${announcement.created_by_name} (${announcement.created_by_role})</p>
-                            </div>
-                            <div class="col-md-6">
-                                <p><strong>Created at:</strong> ${new Date(announcement.created_at).toLocaleString()}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <h6><i class="bi bi-chat-text"></i> <strong>Message:</strong></h6>
+                            <div class="p-3 bg-light rounded border">
+                                <div style="white-space: pre-wrap; line-height: 1.6;">${announcement.message}</div>
                             </div>
                         </div>
                     </div>
-                `,
-                icon: 'info',
-                confirmButtonText: 'Close',
-                width: '700px',
-                heightAuto: true,
-                allowOutsideClick: true,
-                scrollbarPadding: false,
-                customClass: {
-                    popup: 'swal2-no-scroll'
-                }
-            });
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6><i class="bi bi-person"></i> <strong>Created By:</strong></h6>
+                            <p class="mb-1">${announcement.created_by_name || 'System'}</p>
+                            ${announcement.created_by_role ? `
+                                <span class="badge ${getRoleBadgeClass(announcement.created_by_role)}">${announcement.created_by_role}</span>
+                            ` : ''}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <h6><i class="bi bi-calendar"></i> <strong>Created At:</strong></h6>
+                            <p class="mb-1">${new Date(announcement.created_at).toLocaleDateString()}</p>
+                            <small class="text-muted">${new Date(announcement.created_at).toLocaleTimeString()}</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> Announcement Information</h6>
+                            <ul class="mb-0">
+                                <li>This announcement is visible to all users in the system</li>
+                                <li>Created on ${new Date(announcement.created_at).toLocaleDateString('en-US', { 
+                                    weekday: 'long', 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                })}</li>
+                                ${announcement.created_by_name ? `<li>Posted by ${announcement.created_by_name} (${announcement.created_by_role})</li>` : ''}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Update modal content
+            document.getElementById('announcementDetailsContent').innerHTML = content;
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('announcementDetailsModal'));
+            modal.show();
+            
         } else {
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
-                text: data.message
+                text: data.message || 'Failed to load announcement details.'
             });
         }
     })
@@ -348,6 +474,22 @@ function viewAnnouncement(id) {
             text: 'Failed to load announcement details.'
         });
     });
+}
+
+/**
+ * Get badge class for role
+ */
+function getRoleBadgeClass(role) {
+    switch(role) {
+        case 'admin':
+            return 'bg-danger';
+        case 'teacher':
+            return 'bg-primary';
+        case 'student':
+            return 'bg-success';
+        default:
+            return 'bg-secondary';
+    }
 }
 
 /**

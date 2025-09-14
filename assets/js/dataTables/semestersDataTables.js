@@ -267,7 +267,6 @@ function validateDates() {
  * Edit Semester
  */
 function editSemester(id) {
-    console.log('Editing semester with ID:', id);
     currentSemesterEditId = id;
     
     fetch(`app/API/apiSemesters.php`, {
@@ -318,7 +317,6 @@ function populateSemesterForm(semester) {
  * Delete Semester
  */
 function deleteSemester(id) {
-    console.log('Deleting semester with ID:', id);
     Swal.fire({
         title: 'Are you sure?',
         text: "You won't be able to revert this!",

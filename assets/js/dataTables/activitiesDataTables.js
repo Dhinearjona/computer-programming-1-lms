@@ -7,23 +7,16 @@ var activitiesTable;
 var currentEditId = null;
 
 $(document).ready(function() {
-    console.log('Document ready - initializing activities...');
     // Prevent multiple initializations
     if (window.activitiesTableInitialized) {
-        console.log('Activities already initialized, skipping...');
         return;
     }
     
     initializeActivitiesTable();
     setupModalEvents();
-    
-    // Load subjects immediately to ensure they're available
-    console.log('Loading subjects on document ready...');
     loadSubjects();
-    
+    loadGradingPeriods();
     window.activitiesTableInitialized = true;
-    console.log('Activities initialization complete');
-    // Note: loadSubjects() will also be called when modal opens
 });
 
 /**
@@ -32,7 +25,6 @@ $(document).ready(function() {
 function initializeActivitiesTable() {
     // Check if DataTable is already initialized
     if ($.fn.DataTable.isDataTable('#activitiesTable')) {
-        console.log('DataTable already initialized, destroying and recreating...');
         $('#activitiesTable').DataTable().destroy();
     }
     
@@ -51,65 +43,124 @@ function initializeActivitiesTable() {
                 });
             }
         },
-        "columns": (function() {
-            // Define columns based on user role
-            if (window.currentUserRole === 'student') {
-                // Student view - no ID, no Actions
-                return [
-                    { "data": "title", "width": "40%" },
-                    { "data": "subject_name", "width": "20%" },
-                    { "data": "due_date", "width": "20%" },
-                    { "data": "submission_count", "orderable": false, "width": "10%" },
-                    { "data": "status", "orderable": false, "width": "10%" }
-                ];
-            } else {
-                // Admin/Teacher view - full columns with actions
-                return [
-                    { "data": "id", "width": "5%" },
-                    { "data": "title", "width": "25%" },
-                    { "data": "subject_name", "width": "15%" },
-                    { "data": "due_date", "width": "15%" },
-                    { "data": "submission_count", "orderable": false, "width": "10%" },
-                    { "data": "status", "orderable": false, "width": "15%" },
-                    { 
-                        "data": "actions", 
-                        "orderable": false,
-                        "width": "15%",
-                        "render": function(data, type, row) {
-                            let actions = '';
-                            
-                            // Check permissions based on role
-                            if (window.currentUserRole === 'admin' || window.currentUserRole === 'teacher') {
-                                actions = '<div class="btn-group gap-2" role="group">';
-                                
-                                // Edit button - Admin and Teacher can edit
-                                if (window.currentUserRole === 'admin' || window.currentUserRole === 'teacher') {
-                                    actions += `
-                                        <button class="btn btn-outline-primary" onclick="editActivity(${data})" title="Edit">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                    `;
-                                }
-                                
-                                // Delete button - Only Admin can delete
-                                if (window.currentUserRole === 'admin') {
-                                    actions += `
-                                        <button class="btn btn-outline-danger" onclick="deleteActivity(${data})" title="Delete">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    `;
-                                }
-                                
-                                actions += '</div>';
-                            }
-                            
-                            return actions;
-                        }
+        "columns": [
+            { 
+                "data": "title", 
+                "width": "25%",
+                "render": function(data, type, row) {
+                    return `<strong>${data}</strong>`;
+                }
+            },
+            { 
+                "data": "description", 
+                "width": "30%",
+                "render": function(data, type, row) {
+                    if (data && data.length > 100) {
+                        return data.substring(0, 100) + '...';
                     }
-                ];
+                    return data || 'N/A';
+                }
+            },
+            { 
+                "data": "due_date", 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    if (data) {
+                        const date = new Date(data);
+                        return date.toLocaleDateString();
+                    }
+                    return 'N/A';
+                }
+            },
+            { 
+                "data": "grading_period_name", 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    if (data) {
+                        let badgeClass = 'badge bg-primary';
+                        if (data.toLowerCase().includes('prelim')) badgeClass = 'badge bg-info';
+                        else if (data.toLowerCase().includes('midterm')) badgeClass = 'badge bg-warning';
+                        else if (data.toLowerCase().includes('finals')) badgeClass = 'badge bg-danger';
+                        return `<span class="${badgeClass}">${data}</span>`;
+                    }
+                    return '<span class="badge bg-secondary">N/A</span>';
+                }
+            },
+            { 
+                "data": "status", 
+                "orderable": false, 
+                "width": "10%",
+                "render": function(data, type, row) {
+                    let badgeClass = '';
+                    let badgeText = '';
+                    
+                    switch(data) {
+                        case 'active':
+                            badgeClass = 'badge bg-success';
+                            badgeText = 'Active';
+                            break;
+                        case 'inactive':
+                            badgeClass = 'badge bg-secondary';
+                            badgeText = 'Inactive';
+                            break;
+                        case 'pending':
+                            badgeClass = 'badge bg-warning';
+                            badgeText = 'Pending';
+                            break;
+                        case 'completed':
+                            badgeClass = 'badge bg-info';
+                            badgeText = 'Completed';
+                            break;
+                        case 'missed':
+                            badgeClass = 'badge bg-danger';
+                            badgeText = 'Missed';
+                            break;
+                        default:
+                            badgeClass = 'badge bg-success';
+                            badgeText = 'Active';
+                    }
+                    
+                    return `<span class="${badgeClass}">${badgeText}</span>`;
+                }
+            },
+            { 
+                "data": "actions", 
+                "orderable": false,
+                "width": "15%",
+                "render": function(data, type, row) {
+                    let actions = '<div class="btn-group gap-1" role="group">';
+                    
+                    // View Details button (always available)
+                    actions += `
+                        <button class="btn btn-outline-info" onclick="viewActivity(${data})" title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    `;
+                    
+                    // Edit button (for admin/teacher)
+                    if (window.canEditActivities) {
+                        actions += `
+                            <button class="btn btn-outline-primary" onclick="editActivity(${data})" title="Edit Activity">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        `;
+                    }
+                    
+                    // Delete button (only for admin)
+                    if (window.canDeleteActivities && window.isAdmin) {
+                        actions += `
+                            <button class="btn btn-outline-danger" onclick="deleteActivity(${data})" title="Delete Activity">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        `;
+                    }
+                    
+                    actions += '</div>';
+                    return actions;
+                }
             }
-        })(),
-        "order": window.currentUserRole === 'student' ? [[2, "desc"]] : [[0, "desc"]],
+        ],
+        "order": [[2, "asc"]],
         "pageLength": 10,
         "responsive": true,
         "language": {
@@ -129,16 +180,21 @@ function setupModalEvents() {
         resetActivityForm();
     });
     
-    // Load subjects when modal is shown
-    $('#activityModal').on('shown.bs.modal', function () {
-        console.log('Modal shown event triggered');
-        loadSubjects();
+    // Reset activity details modal when closed
+    $('#activityDetailsModal').on('hidden.bs.modal', function () {
+        document.getElementById('activityDetailsContent').innerHTML = '';
     });
     
-    // Also try loading subjects when modal is about to show
-    $('#activityModal').on('show.bs.modal', function () {
-        console.log('Modal show event triggered');
+    // Load subjects and grading periods when modal is shown
+    $('#activityModal').on('shown.bs.modal', function () {
         loadSubjects();
+        loadGradingPeriods();
+    });
+    
+    // Also try loading subjects and grading periods when modal is about to show
+    $('#activityModal').on('show.bs.modal', function () {
+        loadSubjects();
+        loadGradingPeriods();
     });
     
     // Form validation
@@ -218,7 +274,7 @@ function saveActivity() {
  */
 function validateActivityForm() {
     let isValid = true;
-    const requiredFields = ['subject_id', 'title', 'description', 'allow_from', 'due_date'];
+    const requiredFields = ['subject_id', 'grading_period_id', 'title', 'description', 'allow_from', 'due_date'];
     
     requiredFields.forEach(field => {
         const element = document.getElementById(field);
@@ -274,12 +330,9 @@ function editActivity(id) {
  * Load subjects for edit mode
  */
 function loadSubjectsForEdit(activityData) {
-    console.log('Loading subjects for edit mode...');
-    
     fetch("app/API/apiActivities.php?action=get_subjects")
         .then((response) => response.json())
         .then((data) => {
-            console.log('Subjects loaded for edit:', data);
             if (data.success) {
                 const select = document.getElementById("subject_id");
                 if (select) {
@@ -302,7 +355,6 @@ function loadSubjectsForEdit(activityData) {
                         // Show the modal
                         $('#activityModal').modal('show');
                     } else {
-                        console.log('No subjects data found');
                         select.innerHTML = '<option value="">No subjects available</option>';
                     }
                 } else {
@@ -321,9 +373,9 @@ function loadSubjectsForEdit(activityData) {
  * Populate activity form with data
  */
 function populateActivityForm(activity) {
-    console.log('Populating activity form with data:', activity);
     document.getElementById('activityId').value = activity.id;
     document.getElementById('subject_id').value = activity.subject_id;
+    document.getElementById('grading_period_id').value = activity.grading_period_id;
     document.getElementById('title').value = activity.title;
     document.getElementById('description').value = activity.description;
     document.getElementById('allow_from').value = activity.allow_from;
@@ -332,8 +384,6 @@ function populateActivityForm(activity) {
     document.getElementById('reminder_date').value = activity.reminder_date || '';
     document.getElementById('deduction_percent').value = activity.deduction_percent || 0;
     document.getElementById('status').value = activity.status || 'active';
-    
-    console.log('Form populated. Subject ID set to:', activity.subject_id);
 }
 
 /**
@@ -351,25 +401,137 @@ function viewActivity(id) {
     .then(data => {
         if (data.success) {
             const activity = data.data;
-            Swal.fire({
-                title: 'Activity Details',
-                html: `
-                    <div class="text-start">
-                        <p><strong>Title:</strong> ${activity.title}</p>
-                        <p><strong>Description:</strong> ${activity.description || 'N/A'}</p>
-                        <p><strong>Subject:</strong> ${activity.subject_name || 'N/A'}</p>
-                        <p><strong>Allow From:</strong> ${activity.allow_from ? new Date(activity.allow_from).toLocaleDateString() : 'N/A'}</p>
-                        <p><strong>Due Date:</strong> ${activity.due_date ? new Date(activity.due_date).toLocaleDateString() : 'N/A'}</p>
-                        <p><strong>Cutoff Date:</strong> ${activity.cutoff_date ? new Date(activity.cutoff_date).toLocaleDateString() : 'N/A'}</p>
-                        <p><strong>Reminder Date:</strong> ${activity.reminder_date ? new Date(activity.reminder_date).toLocaleDateString() : 'N/A'}</p>
-                        <p><strong>Deduction Percent:</strong> ${activity.deduction_percent || 0}%</p>
-                        <p><strong>Status:</strong> ${activity.status || 'active'}</p>
-                        <p><strong>Created:</strong> ${new Date(activity.created_at).toLocaleDateString()}</p>
+            
+            // Get status badge class
+            let statusBadgeClass = '';
+            let statusText = '';
+            switch(activity.status) {
+                case 'active':
+                    statusBadgeClass = 'badge bg-success';
+                    statusText = 'Active';
+                    break;
+                case 'inactive':
+                    statusBadgeClass = 'badge bg-secondary';
+                    statusText = 'Inactive';
+                    break;
+                case 'pending':
+                    statusBadgeClass = 'badge bg-warning';
+                    statusText = 'Pending';
+                    break;
+                case 'completed':
+                    statusBadgeClass = 'badge bg-info';
+                    statusText = 'Completed';
+                    break;
+                case 'missed':
+                    statusBadgeClass = 'badge bg-danger';
+                    statusText = 'Missed';
+                    break;
+                default:
+                    statusBadgeClass = 'badge bg-success';
+                    statusText = 'Active';
+            }
+            
+            // Get grading period badge class
+            let periodBadgeClass = 'badge bg-primary';
+            if (activity.grading_period_name) {
+                if (activity.grading_period_name.toLowerCase().includes('prelim')) periodBadgeClass = 'badge bg-info';
+                else if (activity.grading_period_name.toLowerCase().includes('midterm')) periodBadgeClass = 'badge bg-warning';
+                else if (activity.grading_period_name.toLowerCase().includes('finals')) periodBadgeClass = 'badge bg-danger';
+            }
+            
+            // Populate modal content
+            document.getElementById('activityDetailsContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-card-heading"></i> Title</label>
+                            <p class="form-control-plaintext">${activity.title}</p>
+                        </div>
                     </div>
-                `,
-                icon: 'info',
-                confirmButtonText: 'Close'
-            });
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-toggle-on"></i> Status</label>
+                            <p class="form-control-plaintext"><span class="${statusBadgeClass}">${statusText}</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-book"></i> Subject</label>
+                            <p class="form-control-plaintext">${activity.subject_name || 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-calendar-check"></i> Grading Period</label>
+                            <p class="form-control-plaintext"><span class="${periodBadgeClass}">${activity.grading_period_name || 'N/A'}</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold"><i class="bi bi-chat-text"></i> Description</label>
+                    <div class="form-control-plaintext border rounded p-3 bg-light">
+                        ${activity.description || 'No description provided'}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-calendar-plus"></i> Allow From</label>
+                            <p class="form-control-plaintext">${activity.allow_from ? new Date(activity.allow_from).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-calendar-event"></i> Due Date</label>
+                            <p class="form-control-plaintext">${activity.due_date ? new Date(activity.due_date).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-calendar-x"></i> Cutoff Date</label>
+                            <p class="form-control-plaintext">${activity.cutoff_date ? new Date(activity.cutoff_date).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-bell"></i> Reminder Date</label>
+                            <p class="form-control-plaintext">${activity.reminder_date ? new Date(activity.reminder_date).toLocaleDateString() : 'N/A'}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"><i class="bi bi-percent"></i> Late Deduction</label>
+                            <p class="form-control-plaintext">${activity.deduction_percent || 0}%</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold"><i class="bi bi-clock"></i> Created</label>
+                    <p class="form-control-plaintext">${new Date(activity.created_at).toLocaleDateString()}</p>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> Activity Information</h6>
+                    <ul class="mb-0">
+                        <li>Students can submit activities from the "Allow From" date</li>
+                        <li>Late submissions after the due date will have a ${activity.deduction_percent || 0}% deduction</li>
+                        <li>No submissions will be accepted after the cutoff date</li>
+                        <li>Reminder notifications will be sent on the reminder date</li>
+                    </ul>
+                </div>
+            `;
+            
+            // Show the modal
+            $('#activityDetailsModal').modal('show');
         } else {
             Swal.fire({
                 icon: 'error',
@@ -446,42 +608,31 @@ function deleteActivity(id) {
  * Load subjects for dropdown
  */
 function loadSubjects() {
-    console.log('Loading subjects...');
-    
-    // Wait a bit to ensure the modal is fully loaded
     setTimeout(() => {
         fetch("app/API/apiActivities.php?action=get_subjects")
             .then((response) => {
-                console.log('Response status:', response.status);
                 return response.json();
             })
             .then((data) => {
-                console.log('API Response:', data);
                 if (data.success) {
                     const select = document.getElementById("subject_id");
-                    console.log('Select element found:', select);
                     if (select) {
                         select.innerHTML = '<option value="">Select Subject</option>';
                         if (data.data && data.data.length > 0) {
-                            console.log('Adding subjects:', data.data.length);
                             data.data.forEach((subject) => {
                                 const option = document.createElement("option");
                                 option.value = subject.id;
                                 option.textContent = subject.name;
                                 select.appendChild(option);
-                                console.log('Added subject:', subject.name);
                             });
                         } else {
-                            console.log('No subjects data found');
                             select.innerHTML = '<option value="">No subjects available</option>';
                         }
                     } else {
                         console.error('Select element not found!');
-                        // Try again after a short delay
                         setTimeout(() => {
                             const select2 = document.getElementById("subject_id");
                             if (select2) {
-                                console.log('Select element found on retry');
                                 select2.innerHTML = '<option value="">Select Subject</option>';
                                 if (data.data && data.data.length > 0) {
                                     data.data.forEach((subject) => {
@@ -500,6 +651,44 @@ function loadSubjects() {
             })
             .catch((error) => {
                 console.error("Error loading subjects:", error);
+            });
+    }, 100);
+}
+
+/**
+ * Load grading periods for dropdown
+ */
+function loadGradingPeriods() {
+    // Wait a bit to ensure the modal is fully loaded
+    setTimeout(() => {
+        fetch("app/API/apiActivities.php?action=get_grading_periods")
+            .then((response) => {
+                return response.json();
+            })
+            .then((data) => {
+                if (data.success) {
+                    const select = document.getElementById("grading_period_id");
+                    if (select) {
+                        select.innerHTML = '<option value="">Select Grading Period</option>';
+                        if (data.data && data.data.length > 0) {
+                            data.data.forEach((period) => {
+                                const option = document.createElement("option");
+                                option.value = period.id;
+                                option.textContent = period.name + ' (' + period.academic_year + ')';
+                                select.appendChild(option);
+                            });
+                        } else {
+                            select.innerHTML = '<option value="">No grading periods available</option>';
+                        }
+                    } else {
+                        console.error('Grading period select element not found!');
+                    }
+                } else {
+                    console.error('Grading periods API returned error:', data.message);
+                }
+            })
+            .catch((error) => {
+                console.error("Error loading grading periods:", error);
             });
     }, 100);
 }

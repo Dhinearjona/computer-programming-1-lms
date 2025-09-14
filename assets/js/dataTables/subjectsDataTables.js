@@ -263,7 +263,6 @@ function validateSubjectForm() {
  * Edit Subject
  */
 function editSubject(id) {
-    console.log('Editing subject with ID:', id);
     currentSubjectEditId = id;
     
     fetch(`app/API/apiSubjects.php`, {
@@ -313,7 +312,6 @@ function populateSubjectForm(subject) {
  * Delete Subject
  */
 function deleteSubject(id) {
-    console.log('Deleting subject with ID:', id);
     Swal.fire({
         title: 'Are you sure?',
         text: "You won't be able to revert this!",

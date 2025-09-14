@@ -39,6 +39,7 @@ try {
                 
                 $data = [
                     'subject_id' => (int)($_POST['subject_id'] ?? 0),
+                    'grading_period_id' => (int)($_POST['grading_period_id'] ?? 0),
                     'title' => trim($_POST['title'] ?? ''),
                     'description' => trim($_POST['description'] ?? ''),
                     'allow_from' => $_POST['allow_from'] ?? null,
@@ -49,8 +50,8 @@ try {
                     'status' => $_POST['status'] ?? 'active'
                 ];
                 
-                if (empty($data['title']) || $data['subject_id'] <= 0) {
-                    throw new Exception('Title and Subject are required');
+                if (empty($data['title']) || $data['subject_id'] <= 0 || $data['grading_period_id'] <= 0) {
+                    throw new Exception('Title, Subject, and Grading Period are required');
                 }
                 
                 $result = $activitiesModel->create($data);
@@ -66,6 +67,7 @@ try {
                 $id = (int)($_POST['id'] ?? 0);
                 $data = [
                     'subject_id' => (int)($_POST['subject_id'] ?? 0),
+                    'grading_period_id' => (int)($_POST['grading_period_id'] ?? 0),
                     'title' => trim($_POST['title'] ?? ''),
                     'description' => trim($_POST['description'] ?? ''),
                     'allow_from' => $_POST['allow_from'] ?? null,
@@ -76,7 +78,7 @@ try {
                     'status' => $_POST['status'] ?? 'active'
                 ];
                 
-                if (empty($data['title']) || $data['subject_id'] <= 0 || $id <= 0) {
+                if (empty($data['title']) || $data['subject_id'] <= 0 || $data['grading_period_id'] <= 0 || $id <= 0) {
                     throw new Exception('Invalid data provided');
                 }
                 
@@ -133,6 +135,20 @@ try {
                 $stmt->execute();
                 $subjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 echo json_encode(['success' => true, 'data' => $subjects]);
+                break;
+                
+            case 'get_grading_periods':
+                // Get all grading periods for dropdown
+                $stmt = $pdo->prepare("
+                    SELECT gp.id, gp.name, s.academic_year 
+                    FROM grading_periods gp 
+                    JOIN semesters s ON gp.semester_id = s.id 
+                    WHERE gp.status = 'active' 
+                    ORDER BY gp.name
+                ");
+                $stmt->execute();
+                $gradingPeriods = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                echo json_encode(['success' => true, 'data' => $gradingPeriods]);
                 break;
                 
             default:

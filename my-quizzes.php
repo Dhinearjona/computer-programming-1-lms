@@ -22,8 +22,8 @@ $username = $user['first_name'] . ' ' . $user['last_name'];
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
 
-// Check if user is student
-if (!Permission::isStudent()) {
+// Check if user can view their own quizzes
+if (!Permission::canViewOwnQuizzes()) {
     header('Location: index.php');
     exit();
 }
@@ -65,10 +65,11 @@ require_once __DIR__ . '/components/sideNav.php';
                                 <thead>
                                     <tr>
                                         <th>Title</th>
-                                        <th>Subject</th>
-                                        <th>Description</th>
+                                        <th>Lesson</th>
+                                        <th>Grading Period</th>
                                         <th>Time Limit</th>
                                         <th>Max Score</th>
+                                        <th>My Score</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -111,6 +112,8 @@ require_once __DIR__ . '/components/sideNav.php';
 <script>
     window.currentUserRole = '<?php echo $userRole; ?>';
     window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
+    window.canViewOwnQuizzes = <?php echo Permission::canViewOwnQuizzes() ? 'true' : 'false'; ?>;
+    window.canTakeQuizzes = <?php echo Permission::canTakeQuizzes() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
 </script>
 

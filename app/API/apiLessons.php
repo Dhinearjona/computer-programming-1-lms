@@ -8,7 +8,9 @@ require_once '../Lessons.php';
 require_once '../Permissions.php';
 
 // Check if user is logged in
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 if (!isset($_SESSION['user'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
@@ -17,10 +19,10 @@ if (!isset($_SESSION['user'])) {
 
 // Check permissions based on action
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
-$readOnlyActions = ['get_subjects', 'get_lessons_by_subject'];
+$readOnlyActions = ['datatable', 'get_subjects', 'get_lessons_by_subject', 'statistics', 'lessons_by_subject_stats'];
 
 // Allow students to access read-only actions
-if (!in_array($action, $readOnlyActions) && !Permission::isAdminOrTeacher()) {
+if (!in_array($action, $readOnlyActions) && !Permission::canViewLessons()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Access denied']);
     exit;
@@ -58,6 +60,11 @@ try {
             break;
             
         case 'get_lesson':
+            // Check if user can view lessons (needed for editing)
+            if (!Permission::canViewLessons()) {
+                throw new Exception('You do not have permission to view lesson details');
+            }
+            
             $id = $_POST['id'] ?? '';
             if (empty($id)) {
                 throw new Exception('Lesson ID is required');
@@ -72,6 +79,11 @@ try {
             break;
             
         case 'create_lesson':
+            // Check if user can add lessons
+            if (!Permission::canAddLessons()) {
+                throw new Exception('You do not have permission to create lessons');
+            }
+            
             $subject_id = $_POST['subject_id'] ?? '';
             $title = $_POST['title'] ?? '';
             $content = $_POST['content'] ?? '';
@@ -104,6 +116,11 @@ try {
             break;
             
         case 'update_lesson':
+            // Check if user can edit lessons
+            if (!Permission::canEditLessons()) {
+                throw new Exception('You do not have permission to edit lessons');
+            }
+            
             $id = $_POST['id'] ?? '';
             $subject_id = $_POST['subject_id'] ?? '';
             $title = $_POST['title'] ?? '';
@@ -137,6 +154,11 @@ try {
             break;
             
         case 'delete_lesson':
+            // Check if user can delete lessons
+            if (!Permission::canDeleteLessons()) {
+                throw new Exception('You do not have permission to delete lessons');
+            }
+            
             $id = $_POST['id'] ?? '';
             if (empty($id)) {
                 throw new Exception('Lesson ID is required');

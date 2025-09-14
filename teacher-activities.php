@@ -22,8 +22,8 @@ $username = $user['first_name'] . ' ' . $user['last_name'];
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
 
-// Check if user is teacher or admin
-if (!Permission::isAdminOrTeacher()) {
+// Check if user has permission to manage activities
+if (!Permission::canManageActivities()) {
     header('Location: index.php');
     exit();
 }
@@ -36,7 +36,13 @@ require_once __DIR__ . '/components/sideNav.php';
 
 <main id="main" class="main">
     <div class="pagetitle">
-        <h1>Student Submissions</h1>
+        <h1>
+            <?php if (Permission::isAdmin()): ?>
+            Student Activity Submissions Management
+            <?php elseif (Permission::isTeacher()): ?>
+            My Students' Activity Submissions
+            <?php endif; ?>
+        </h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
@@ -51,11 +57,22 @@ require_once __DIR__ . '/components/sideNav.php';
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="card-title">Student Activity Submissions</h5>
-                            <div class="btn-group">
+                            <h5 class="card-title">
+                                <?php if (Permission::isAdmin()): ?>
+                                All Student Activity Submissions
+                                <?php elseif (Permission::isTeacher()): ?>
+                                My Students' Activity Submissions
+                                <?php endif; ?>
+                            </h5>
+                            <div class="btn-group gap-2">
                                 <button type="button" class="btn btn-outline-info" onclick="refreshSubmissionsTable()" title="Refresh">
                                     <i class="bi bi-arrow-clockwise"></i> Refresh
                                 </button>
+                                <?php if (Permission::canManageActivities()): ?>
+                                <button type="button" class="btn btn-outline-success" onclick="exportSubmissionsData()" title="Export Data">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -64,9 +81,10 @@ require_once __DIR__ . '/components/sideNav.php';
                             <table class="table table-striped" id="submissionsTable">
                                 <thead>
                                     <tr>
-                                        <th>Student</th>
-                                        <th>Activity</th>
+                                        <th>Student Name</th>
+                                        <th>Activity Title</th>
                                         <th>Subject</th>
+                                        <th>Grading Period</th>
                                         <th>Submission Date</th>
                                         <th>Status</th>
                                         <th>Grade</th>
@@ -163,13 +181,37 @@ require_once __DIR__ . '/components/sideNav.php';
     </div>
 </div>
 
+<!-- Vendor JS Files -->
+<script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
+<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="assets/vendor/chart.js/chart.umd.js"></script>
+<script src="assets/vendor/echarts/echarts.min.js"></script>
+<script src="assets/vendor/simple-datatables/simple-datatables.js"></script>
+<script src="assets/vendor/tinymce/tinymce.min.js"></script>
+<script src="assets/vendor/php-email-form/validate.js"></script>
+
+<!-- Template Main JS File -->
+<script src="assets/js/main.js"></script>
+
+<!-- jQuery -->
+<script src="assets/jquery/jquery-3.7.1.min.js"></script>
+
+<!-- DataTables JS -->
+<script src="assets/js/dataTables/dataTables.js"></script>
+<script src="assets/js/dataTables/dataTables.bootstrap5.js"></script>
+
 <!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Teacher Activities DataTables JS -->
+<script src="assets/js/dataTables/teacherActivitiesDataTables.js"></script>
 
 <!-- Pass permissions to JavaScript -->
 <script>
     window.currentUserRole = '<?php echo $userRole; ?>';
-    window.isTeacher = <?php echo Permission::isAdminOrTeacher() ? 'true' : 'false'; ?>;
+    window.canManageActivities = <?php echo Permission::canManageActivities() ? 'true' : 'false'; ?>;
+    window.isAdmin = <?php echo Permission::isAdmin() ? 'true' : 'false'; ?>;
+    window.isTeacher = <?php echo Permission::isTeacher() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
 </script>
 

@@ -31,53 +31,108 @@ function initializeStudentsTable() {
             }
         },
         "columns": [
-            { "data": "id", "width": "5%" },
-            { "data": "full_name", "width": "20%" },
-            { "data": "email", "width": "20%" },
-            { "data": "course", "width": "15%" },
-            { "data": "year_level", "width": "10%" },
-            { "data": "activity_submissions", "orderable": false, "width": "8%" },
-            { "data": "quiz_submissions", "orderable": false, "width": "8%" },
-            { "data": "average_grade", "orderable": false, "width": "8%" },
-            { "data": "created_at", "width": "10%" },
-            { "data": "status", "orderable": false, "width": "10%" },
+            { 
+                "data": "full_name", 
+                "width": "25%",
+                "render": function(data, type, row) {
+                    return `<strong>${data}</strong>`;
+                }
+            },
+            { 
+                "data": "activity_submissions", 
+                "orderable": false, 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    return `<span class="badge bg-warning">${data || 0}</span>`;
+                }
+            },
+            { 
+                "data": "quiz_submissions", 
+                "orderable": false, 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    return `<span class="badge bg-success">${data || 0}</span>`;
+                }
+            },
+            { 
+                "data": "average_grade", 
+                "orderable": false, 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    if (data && data !== 'N/A' && data > 0) {
+                        let badgeClass = data >= 75 ? 'badge bg-success' : data >= 50 ? 'badge bg-warning' : 'badge bg-danger';
+                        return `<span class="${badgeClass}">${data}%</span>`;
+                    }
+                    return '<span class="badge bg-light text-dark">N/A</span>';
+                }
+            },
+            { 
+                "data": "created_at", 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    return data || 'N/A';
+                }
+            },
+            { 
+                "data": "status", 
+                "orderable": false, 
+                "width": "10%",
+                "render": function(data, type, row) {
+                    let badgeClass = '';
+                    let badgeText = '';
+                    
+                    switch(data) {
+                        case 'active':
+                            badgeClass = 'badge bg-success';
+                            badgeText = 'Active';
+                            break;
+                        case 'inactive':
+                            badgeClass = 'badge bg-secondary';
+                            badgeText = 'Inactive';
+                            break;
+                        case 'suspended':
+                            badgeClass = 'badge bg-danger';
+                            badgeText = 'Suspended';
+                            break;
+                        default:
+                            badgeClass = 'badge bg-success';
+                            badgeText = 'Active';
+                    }
+                    
+                    return `<span class="${badgeClass}">${badgeText}</span>`;
+                }
+            },
             { 
                 "data": "actions", 
                 "orderable": false,
                 "width": "15%",
                 "render": function(data, type, row) {
-                    let actions = '';
+                    let actions = '<div class="btn-group gap-1" role="group">';
                     
-                    // Check permissions based on role
-                    if (window.canEditStudents || window.canDeleteStudents) {
-                        actions = '<div class="btn-group gap-2" role="group">';
-                        
-                        // Edit button
-                        if (window.canEditStudents) {
-                            actions += `
-                                <button class="btn btn-outline-primary" onclick="editStudent(${data})" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                            `;
-                        }
-                        
-                        // Delete button
-                        if (window.canDeleteStudents) {
-                            actions += `
-                                <button class="btn btn-outline-danger" onclick="deleteStudent(${data})" title="Delete">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            `;
-                        }
-                        
-                        actions += '</div>';
+                    // Edit button
+                    if (window.canEditStudents) {
+                        actions += `
+                            <button class="btn btn-outline-primary" onclick="editStudent(${data})" title="Edit Student">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        `;
                     }
                     
+                    // Delete button (only for admin)
+                    if (window.canDeleteStudents && window.isAdmin) {
+                        actions += `
+                            <button class="btn btn-outline-danger" onclick="deleteStudent(${data})" title="Delete Student">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        `;
+                    }
+                    
+                    actions += '</div>';
                     return actions;
                 }
             }
         ],
-        "order": [[0, "desc"]],
+        "order": [[0, "asc"]],
         "pageLength": 10,
         "responsive": true,
         "language": {
@@ -546,6 +601,113 @@ function deleteStudent(id) {
                 });
             });
         }
+    });
+}
+
+/**
+ * View Student Details
+ */
+function viewStudentDetails(id) {
+    fetch(`app/API/apiStudents.php?action=get_student&id=${id}`, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const student = data.data;
+            
+            let content = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-person"></i> <strong>Full Name:</strong></h6>
+                        <p class="fs-5 fw-bold text-primary">${student.first_name} ${student.last_name}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-envelope"></i> <strong>Email:</strong></h6>
+                        <p><a href="mailto:${student.email}" class="text-decoration-none">${student.email}</a></p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-book"></i> <strong>Course:</strong></h6>
+                        <p><span class="badge bg-primary">${student.course}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-calendar"></i> <strong>Year Level:</strong></h6>
+                        <p><span class="badge bg-info">${student.year_level} Year</span></p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6><i class="bi bi-clipboard-check"></i> <strong>Activity Submissions:</strong></h6>
+                        <p><span class="badge bg-warning">${student.activity_submissions || 0}</span></p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="bi bi-pencil-square"></i> <strong>Quiz Submissions:</strong></h6>
+                        <p><span class="badge bg-success">${student.quiz_submissions || 0}</span></p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6><i class="bi bi-graph-up"></i> <strong>Average Grade:</strong></h6>
+                        <p>${student.average_grade && student.average_grade !== 'N/A' ? 
+                            `<span class="badge ${student.average_grade >= 75 ? 'bg-success' : student.average_grade >= 50 ? 'bg-warning' : 'bg-danger'}">${student.average_grade}%</span>` : 
+                            '<span class="badge bg-light text-dark">N/A</span>'}</p>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-calendar-plus"></i> <strong>Account Created:</strong></h6>
+                        <p>${new Date(student.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-shield-check"></i> <strong>Status:</strong></h6>
+                        <p><span class="badge bg-success">Active</span></p>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle"></i> Student Information</h6>
+                    <ul class="mb-0">
+                        <li>This student is enrolled in ${student.course} - ${student.year_level} Year</li>
+                        <li>Account created on ${new Date(student.created_at).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        })}</li>
+                        <li>Total activity submissions: ${student.activity_submissions || 0}</li>
+                        <li>Total quiz submissions: ${student.quiz_submissions || 0}</li>
+                    </ul>
+                </div>
+            `;
+            
+            Swal.fire({
+                title: 'Student Details',
+                html: content,
+                icon: 'info',
+                confirmButtonText: 'Close',
+                width: '800px',
+                heightAuto: true,
+                allowOutsideClick: true
+            });
+            
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: data.message || 'Failed to load student details.'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error!',
+            text: 'Failed to load student details.'
+        });
     });
 }
 

@@ -11,12 +11,13 @@ class Activities {
      */
     public function create($data) {
         $stmt = $this->pdo->prepare("
-            INSERT INTO activities (subject_id, title, description, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO activities (subject_id, grading_period_id, title, description, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
         $stmt->execute([
             $data['subject_id'],
+            $data['grading_period_id'],
             $data['title'],
             $data['description'],
             $data['allow_from'],
@@ -38,9 +39,11 @@ class Activities {
             SELECT 
                 a.*,
                 s.name as subject_name,
+                gp.name as grading_period_name,
                 COUNT(asub.id) as submission_count
             FROM activities a
             LEFT JOIN subjects s ON a.subject_id = s.id
+            LEFT JOIN grading_periods gp ON a.grading_period_id = gp.id
             LEFT JOIN activity_submissions asub ON a.id = asub.activity_id
             GROUP BY a.id
             ORDER BY a.created_at DESC
@@ -61,10 +64,10 @@ class Activities {
             $data[] = [
                 'id' => $activity['id'],
                 'title' => htmlspecialchars($activity['title']),
-                'subject_name' => htmlspecialchars($activity['subject_name'] ?? 'No Subject'),
-                'due_date' => $activity['due_date'] ? date('M d, Y', strtotime($activity['due_date'])) : 'No due date',
-                'submission_count' => $activity['submission_count'],
-                'status' => $this->getActivityStatus($activity),
+                'description' => htmlspecialchars($activity['description'] ?? ''),
+                'due_date' => $activity['due_date'],
+                'grading_period_name' => htmlspecialchars($activity['grading_period_name'] ?? 'No Period'),
+                'status' => $activity['status'],
                 'actions' => $activity['id']
             ];
         }
@@ -79,9 +82,11 @@ class Activities {
         $stmt = $this->pdo->prepare("
             SELECT 
                 a.*,
-                s.name as subject_name
+                s.name as subject_name,
+                gp.name as grading_period_name
             FROM activities a
             LEFT JOIN subjects s ON a.subject_id = s.id
+            LEFT JOIN grading_periods gp ON a.grading_period_id = gp.id
             WHERE a.id = ?
         ");
         $stmt->execute([$id]);
@@ -94,12 +99,13 @@ class Activities {
     public function update($id, $data) {
         $stmt = $this->pdo->prepare("
             UPDATE activities 
-            SET subject_id = ?, title = ?, description = ?, allow_from = ?, due_date = ?, cutoff_date = ?, reminder_date = ?, deduction_percent = ?, status = ? 
+            SET subject_id = ?, grading_period_id = ?, title = ?, description = ?, allow_from = ?, due_date = ?, cutoff_date = ?, reminder_date = ?, deduction_percent = ?, status = ? 
             WHERE id = ?
         ");
         
         $stmt->execute([
             $data['subject_id'],
+            $data['grading_period_id'],
             $data['title'],
             $data['description'],
             $data['allow_from'],

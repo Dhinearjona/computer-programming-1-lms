@@ -1,349 +1,280 @@
-<?php 
+<?php
 
-class Permission {
-    
+class Permission
+{
     /**
      * Get current user role from session
      */
-    private static function getUserRole(): string {
+    private static function getUserRole(): string
+    {
         return $_SESSION['user']['role'] ?? '';
     }
-    
+
+    /**
+     * Check if user has exact role
+     */
+    private static function hasRole(string $role): bool
+    {
+        return self::getUserRole() === $role;
+    }
+
+    /**
+     * Check if user has any of the given roles
+     */
+    private static function hasAnyRole(array $roles): bool
+    {
+        return in_array(self::getUserRole(), $roles, true);
+    }
+
     // ========================
-    // USER MANAGEMENT PERMISSIONS
+    // USER MANAGEMENT
     // ========================
-    
-    /**
-     * Can manage users (Admin only)
-     */
-    public static function canManageUsers(): bool {
-        return self::getUserRole() === 'admin';
+
+    public static function canManageUsers(): bool
+    {
+        return self::hasRole('admin');
     }
-    
-    /**
-     * Can add users (Admin only)
-     */
-    public static function canAddUsers(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canAddUsers(): bool
+    {
+        return self::hasRole('admin');
     }
-    
-    /**
-     * Can edit users (Admin only)
-     */
-    public static function canEditUsers(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canEditUsers(): bool
+    {
+        return self::hasRole('admin');
     }
-    
-    /**
-     * Can delete users (Admin only)
-     */
-    public static function canDeleteUsers(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canDeleteUsers(): bool
+    {
+        return self::hasRole('admin');
     }
-    
+
     // ========================
-    // STUDENT MANAGEMENT PERMISSIONS
+    // STUDENTS
     // ========================
-    
-    /**
-     * Can manage students (Admin and Teacher)
-     */
-    public static function canManageStudents(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+
+    public static function canManageStudents(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can add students (Admin and Teacher)
-     */
-    public static function canAddStudents(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canAddStudents(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can edit students (Admin and Teacher)
-     */
-    public static function canEditStudents(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canEditStudents(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can delete students (Admin only)
-     */
-    public static function canDeleteStudents(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canDeleteStudents(): bool
+    {
+        return self::hasRole('admin');
     }
-    
+
     // ========================
-    // ACTIVITIES PERMISSIONS
+    // ACTIVITIES
     // ========================
-    
-    /**
-     * Can manage activities (Admin and Teacher)
-     */
-    public static function canManageActivities(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+
+    public static function canManageActivities(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can add activities (Admin and Teacher)
-     */
-    public static function canAddActivities(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canAddActivities(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can edit activities (Admin and Teacher)
-     */
-    public static function canEditActivities(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canEditActivities(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can delete activities (Admin only)
-     */
-    public static function canDeleteActivities(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canDeleteActivities(): bool
+    {
+        return self::hasRole('admin');
     }
-    
+    public static function canViewOwnActivities(): bool
+    {
+        return self::hasRole('student');
+    }
+    public static function canSubmitActivities(): bool
+    {
+        return self::hasRole('student');
+    }
+
     // ========================
-    // QUIZZES PERMISSIONS
+    // LESSONS
     // ========================
-    
-    /**
-     * Can manage quizzes (Admin and Teacher)
-     */
-    public static function canManageQuizzes(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+
+    public static function canManageLessons(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can add quizzes (Admin and Teacher)
-     */
-    public static function canAddQuizzes(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canViewLessons(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher', 'student']);
     }
-    
-    /**
-     * Can edit quizzes (Admin and Teacher)
-     */
-    public static function canEditQuizzes(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canAddLessons(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can delete quizzes (Admin only)
-     */
-    public static function canDeleteQuizzes(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canEditLessons(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
+    public static function canDeleteLessons(): bool
+    {
+        return self::hasRole('admin');
+    }
+
     // ========================
-    // GRADES PERMISSIONS
+    // QUIZZES
     // ========================
-    
-    /**
-     * Can manage grades (Admin and Teacher)
-     */
-    public static function canManageGrades(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+
+    public static function canManageQuizzes(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can view own grades (Student)
-     */
-    public static function canViewOwnGrades(): bool {
-        return self::getUserRole() === 'student';
+    public static function canAddQuizzes(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
+    public static function canEditQuizzes(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
+    }
+    public static function canDeleteQuizzes(): bool
+    {
+        return self::hasRole('admin');
+    }
+    public static function canViewOwnQuizzes(): bool
+    {
+        return self::hasRole('student');
+    }
+    public static function canTakeQuizzes(): bool
+    {
+        return self::hasRole('student');
+    }
+
     // ========================
-    // INTERVENTIONS PERMISSIONS
+    // GRADES
     // ========================
-    
-    /**
-     * Can manage interventions (Admin and Teacher)
-     */
-    public static function canManageInterventions(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+
+    public static function canManageGrades(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can add interventions (Admin and Teacher)
-     */
-    public static function canAddInterventions(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canViewOwnGrades(): bool
+    {
+        return self::hasRole('student');
     }
-    
-    /**
-     * Can edit interventions (Admin and Teacher)
-     */
-    public static function canEditInterventions(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
-    }
-    
-    /**
-     * Can delete interventions (Admin only)
-     */
-    public static function canDeleteInterventions(): bool {
-        return self::getUserRole() === 'admin';
-    }
-    
+
     // ========================
-    // ANNOUNCEMENTS PERMISSIONS
+    // INTERVENTIONS
     // ========================
-    
-    /**
-     * Can manage announcements (Admin and Teacher)
-     */
-    public static function canManageAnnouncements(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+
+    public static function canManageInterventions(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can add announcements (Admin and Teacher)
-     */
-    public static function canAddAnnouncements(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canAddInterventions(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can edit announcements (Admin and Teacher)
-     */
-    public static function canEditAnnouncements(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canEditInterventions(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can delete announcements (Admin only)
-     */
-    public static function canDeleteAnnouncements(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canDeleteInterventions(): bool
+    {
+        return self::hasRole('admin');
     }
-    
+
     // ========================
-    // SEMESTER MANAGEMENT PERMISSIONS
+    // ANNOUNCEMENTS
     // ========================
-    
-    /**
-     * Can manage semesters (Admin only)
-     */
-    public static function canManageSemesters(): bool {
-        return self::getUserRole() === 'admin';
+
+    public static function canManageAnnouncements(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can add semesters (Admin only)
-     */
-    public static function canAddSemesters(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canAddAnnouncements(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can edit semesters (Admin only)
-     */
-    public static function canEditSemesters(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canEditAnnouncements(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
-    /**
-     * Can delete semesters (Admin only)
-     */
-    public static function canDeleteSemesters(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canDeleteAnnouncements(): bool
+    {
+        return self::hasRole('admin');
     }
-    
+
     // ========================
-    // GRADING PERIODS PERMISSIONS
+    // SEMESTERS
     // ========================
-    
-    /**
-     * Can manage grading periods (Admin and Teacher)
-     */
-    public static function canManageGradingPeriods(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+
+    public static function canManageSemesters(): bool
+    {
+        return self::hasRole('admin');
     }
-    
-    /**
-     * Can add grading periods (Admin and Teacher)
-     */
-    public static function canAddGradingPeriods(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canAddSemesters(): bool
+    {
+        return self::hasRole('admin');
     }
-    
-    /**
-     * Can edit grading periods (Admin and Teacher)
-     */
-    public static function canEditGradingPeriods(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function canEditSemesters(): bool
+    {
+        return self::hasRole('admin');
     }
-    
-    /**
-     * Can delete grading periods (Admin only)
-     */
-    public static function canDeleteGradingPeriods(): bool {
-        return self::getUserRole() === 'admin';
+    public static function canDeleteSemesters(): bool
+    {
+        return self::hasRole('admin');
     }
-    
+
     // ========================
-    // SYSTEM SETTINGS PERMISSIONS
+    // GRADING PERIODS
     // ========================
-    
-    /**
-     * Can manage system settings (Admin only)
-     */
-    public static function canManageSettings(): bool {
-        return self::getUserRole() === 'admin';
+
+    public static function canManageGradingPeriods(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
-    
+    public static function canAddGradingPeriods(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
+    }
+    public static function canEditGradingPeriods(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
+    }
+    public static function canDeleteGradingPeriods(): bool
+    {
+        return self::hasRole('admin');
+    }
+
     // ========================
-    // UTILITY METHODS
+    // SETTINGS
     // ========================
-    
-    /**
-     * Check if user is admin
-     */
-    public static function isAdmin(): bool {
-        return self::getUserRole() === 'admin';
+
+    public static function canManageSettings(): bool
+    {
+        return self::hasRole('admin');
     }
-    
-    /**
-     * Check if user is teacher
-     */
-    public static function isTeacher(): bool {
-        return self::getUserRole() === 'teacher';
+
+    // ========================
+    // UTILITY
+    // ========================
+
+    public static function isAdmin(): bool
+    {
+        return self::hasRole('admin');
     }
-    
-    /**
-     * Check if user is student
-     */
-    public static function isStudent(): bool {
-        return self::getUserRole() === 'student';
+    public static function isTeacher(): bool
+    {
+        return self::hasRole('teacher');
     }
-    
-    /**
-     * Check if user is admin or teacher
-     */
-    public static function isAdminOrTeacher(): bool {
-        $role = self::getUserRole();
-        return in_array($role, ['admin', 'teacher']);
+    public static function isStudent(): bool
+    {
+        return self::hasRole('student');
+    }
+    public static function isAdminOrTeacher(): bool
+    {
+        return self::hasAnyRole(['admin', 'teacher']);
     }
 }
-?>

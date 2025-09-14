@@ -11,12 +11,13 @@ class Quizzes {
      */
     public function create($data) {
         $stmt = $this->pdo->prepare("
-            INSERT INTO quizzes (lesson_id, title, max_score, time_limit_minutes) 
-            VALUES (?, ?, ?, ?)
+            INSERT INTO quizzes (lesson_id, grading_period_id, title, max_score, time_limit_minutes) 
+            VALUES (?, ?, ?, ?, ?)
         ");
         
         $stmt->execute([
             $data['lesson_id'],
+            $data['grading_period_id'],
             $data['title'],
             $data['max_score'],
             $data['time_limit_minutes'] ?? null
@@ -35,10 +36,13 @@ class Quizzes {
                 l.title as lesson_title,
                 l.subject_id,
                 s.name as subject_name,
+                gp.name as grading_period_name,
+                gp.status as grading_period_status,
                 COUNT(qr.id) as submission_count
             FROM quizzes q
             LEFT JOIN lessons l ON q.lesson_id = l.id
             LEFT JOIN subjects s ON l.subject_id = s.id
+            LEFT JOIN grading_periods gp ON q.grading_period_id = gp.id
             LEFT JOIN quiz_results qr ON q.id = qr.quiz_id
             GROUP BY q.id
             ORDER BY q.created_at DESC
@@ -60,10 +64,11 @@ class Quizzes {
                 'id' => $quiz['id'],
                 'title' => htmlspecialchars($quiz['title']),
                 'lesson_title' => htmlspecialchars($quiz['lesson_title'] ?? 'No Lesson'),
+                'grading_period_name' => htmlspecialchars($quiz['grading_period_name'] ?? 'No Period'),
                 'max_score' => $quiz['max_score'],
-                'time_limit_minutes' => $quiz['time_limit_minutes'] ? $quiz['time_limit_minutes'] . ' min' : 'No limit',
+                'time_limit_minutes' => $quiz['time_limit_minutes'],
                 'submission_count' => $quiz['submission_count'],
-                'created_at' => date('M d, Y', strtotime($quiz['created_at'])),
+                'created_at' => $quiz['created_at'],
                 'status' => $this->getQuizStatus($quiz),
                 'actions' => $quiz['id']
             ];
@@ -81,10 +86,13 @@ class Quizzes {
                 q.*,
                 l.title as lesson_title,
                 l.subject_id,
-                s.name as subject_name
+                s.name as subject_name,
+                gp.name as grading_period_name,
+                gp.status as grading_period_status
             FROM quizzes q
             LEFT JOIN lessons l ON q.lesson_id = l.id
             LEFT JOIN subjects s ON l.subject_id = s.id
+            LEFT JOIN grading_periods gp ON q.grading_period_id = gp.id
             WHERE q.id = ?
         ");
         $stmt->execute([$id]);
@@ -111,12 +119,13 @@ class Quizzes {
     public function update($id, $data) {
         $stmt = $this->pdo->prepare("
             UPDATE quizzes 
-            SET lesson_id = ?, title = ?, max_score = ?, time_limit_minutes = ? 
+            SET lesson_id = ?, grading_period_id = ?, title = ?, max_score = ?, time_limit_minutes = ? 
             WHERE id = ?
         ");
         
         $stmt->execute([
             $data['lesson_id'],
+            $data['grading_period_id'],
             $data['title'],
             $data['max_score'],
             $data['time_limit_minutes'] ?? null,
@@ -191,12 +200,18 @@ class Quizzes {
      * Get quiz status based on submissions and activity
      */
     private function getQuizStatus($quiz) {
+        $gradingPeriodStatus = $quiz['grading_period_status'] ?? 'active';
         $submissionCount = $quiz['submission_count'];
         
-        if ($submissionCount == 0) {
-            return '<span class="badge bg-secondary">No Submissions</span>';
-        } else {
-            return '<span class="badge bg-success">Active</span>';
+        switch ($gradingPeriodStatus) {
+            case 'completed':
+                return 'completed';
+            case 'inactive':
+                return 'inactive';
+            case 'pending':
+                return 'pending';
+            default:
+                return 'active';
         }
     }
     
