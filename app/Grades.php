@@ -14,14 +14,17 @@ class Grades {
      */
     public function create($data) {
         try {
-            $sql = "INSERT INTO grades (student_id, activity_score, quiz_score, exam_score, final_grade, status) VALUES (?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO grades (student_id, subject_id, semester_id, grading_period_id, activity_score, quiz_score, exam_score, period_grade, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 $data['student_id'],
+                $data['subject_id'],
+                $data['semester_id'],
+                $data['grading_period_id'],
                 $data['activity_score'],
                 $data['quiz_score'],
                 $data['exam_score'],
-                $data['final_grade'],
+                $data['period_grade'],
                 $data['status']
             ]);
             
@@ -39,20 +42,30 @@ class Grades {
         $sql = "SELECT 
                     g.id,
                     g.student_id,
+                    g.subject_id,
+                    g.semester_id,
+                    g.grading_period_id,
                     g.activity_score,
                     g.quiz_score,
                     g.exam_score,
-                    g.final_grade,
+                    g.period_grade,
                     g.status,
                     g.created_at,
                     s.course,
                     s.year_level,
                     u.first_name,
                     u.last_name,
-                    u.email
+                    u.email,
+                    sub.name as subject_name,
+                    sem.name as semester_name,
+                    sem.academic_year,
+                    gp.name as grading_period_name
                 FROM grades g
                 INNER JOIN students s ON g.student_id = s.id
                 INNER JOIN users u ON s.user_id = u.id
+                INNER JOIN subjects sub ON g.subject_id = sub.id
+                INNER JOIN semesters sem ON g.semester_id = sem.id
+                INNER JOIN grading_periods gp ON g.grading_period_id = gp.id
                 ORDER BY g.created_at DESC";
         
         $stmt = $this->pdo->prepare($sql);
@@ -75,10 +88,14 @@ class Grades {
                 'email' => $grade['email'],
                 'course' => $grade['course'],
                 'year_level' => $grade['year_level'],
+                'subject_name' => $grade['subject_name'],
+                'semester_name' => $grade['semester_name'],
+                'academic_year' => $grade['academic_year'],
+                'grading_period_name' => ucfirst($grade['grading_period_name']),
                 'activity_score' => $grade['activity_score'],
                 'quiz_score' => $grade['quiz_score'],
                 'exam_score' => $grade['exam_score'],
-                'final_grade' => $grade['final_grade'],
+                'period_grade' => $grade['period_grade'],
                 'status' => $grade['status'],
                 'created_at' => date('M d, Y', strtotime($grade['created_at']))
             ];
@@ -97,10 +114,14 @@ class Grades {
         foreach ($grades as $grade) {
             $data[] = [
                 'id' => $grade['id'],
+                'subject_name' => $grade['subject_name'],
+                'semester_name' => $grade['semester_name'],
+                'academic_year' => $grade['academic_year'],
+                'grading_period_name' => ucfirst($grade['grading_period_name']),
                 'activity_score' => $grade['activity_score'],
                 'quiz_score' => $grade['quiz_score'],
                 'exam_score' => $grade['exam_score'],
-                'final_grade' => $grade['final_grade'],
+                'period_grade' => $grade['period_grade'],
                 'status' => $grade['status'],
                 'created_at' => date('M d, Y', strtotime($grade['created_at']))
             ];
@@ -116,20 +137,30 @@ class Grades {
         $sql = "SELECT 
                     g.id,
                     g.student_id,
+                    g.subject_id,
+                    g.semester_id,
+                    g.grading_period_id,
                     g.activity_score,
                     g.quiz_score,
                     g.exam_score,
-                    g.final_grade,
+                    g.period_grade,
                     g.status,
                     g.created_at,
                     s.course,
                     s.year_level,
                     u.first_name,
                     u.last_name,
-                    u.email
+                    u.email,
+                    sub.name as subject_name,
+                    sem.name as semester_name,
+                    sem.academic_year,
+                    gp.name as grading_period_name
                 FROM grades g
                 INNER JOIN students s ON g.student_id = s.id
                 INNER JOIN users u ON s.user_id = u.id
+                INNER JOIN subjects sub ON g.subject_id = sub.id
+                INNER JOIN semesters sem ON g.semester_id = sem.id
+                INNER JOIN grading_periods gp ON g.grading_period_id = gp.id
                 WHERE g.id = ?";
         
         $stmt = $this->pdo->prepare($sql);
@@ -142,14 +173,17 @@ class Grades {
      */
     public function update($id, $data) {
         try {
-            $sql = "UPDATE grades SET student_id = ?, activity_score = ?, quiz_score = ?, exam_score = ?, final_grade = ?, status = ? WHERE id = ?";
+            $sql = "UPDATE grades SET student_id = ?, subject_id = ?, semester_id = ?, grading_period_id = ?, activity_score = ?, quiz_score = ?, exam_score = ?, period_grade = ?, status = ? WHERE id = ?";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([
                 $data['student_id'],
+                $data['subject_id'],
+                $data['semester_id'],
+                $data['grading_period_id'],
                 $data['activity_score'],
                 $data['quiz_score'],
                 $data['exam_score'],
-                $data['final_grade'],
+                $data['period_grade'],
                 $data['status'],
                 $id
             ]);
@@ -184,20 +218,30 @@ class Grades {
         $sql = "SELECT 
                     g.id,
                     g.student_id,
+                    g.subject_id,
+                    g.semester_id,
+                    g.grading_period_id,
                     g.activity_score,
                     g.quiz_score,
                     g.exam_score,
-                    g.final_grade,
+                    g.period_grade,
                     g.status,
                     g.created_at,
                     s.course,
                     s.year_level,
                     u.first_name,
                     u.last_name,
-                    u.email
+                    u.email,
+                    sub.name as subject_name,
+                    sem.name as semester_name,
+                    sem.academic_year,
+                    gp.name as grading_period_name
                 FROM grades g
                 INNER JOIN students s ON g.student_id = s.id
                 INNER JOIN users u ON s.user_id = u.id
+                INNER JOIN subjects sub ON g.subject_id = sub.id
+                INNER JOIN semesters sem ON g.semester_id = sem.id
+                INNER JOIN grading_periods gp ON g.grading_period_id = gp.id
                 WHERE g.student_id = ?
                 ORDER BY g.created_at DESC";
         
@@ -238,14 +282,24 @@ class Grades {
     }
     
     /**
+     * Get all subjects for dropdown
+     */
+    public function getAllSubjects() {
+        $sql = "SELECT id, name, description FROM subjects ORDER BY name ASC";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    /**
      * Get grade statistics
      */
     public function getStatistics() {
         $sql = "SELECT 
                     COUNT(*) as total_grades,
-                    AVG(g.final_grade) as average_grade,
-                    COUNT(CASE WHEN g.final_grade >= 75 THEN 1 END) as passing_grades,
-                    COUNT(CASE WHEN g.final_grade < 75 THEN 1 END) as failing_grades
+                    AVG(g.period_grade) as average_grade,
+                    COUNT(CASE WHEN g.period_grade >= 75 THEN 1 END) as passing_grades,
+                    COUNT(CASE WHEN g.period_grade < 75 THEN 1 END) as failing_grades
                 FROM grades g";
         
         $stmt = $this->pdo->prepare($sql);
@@ -257,35 +311,45 @@ class Grades {
      * Get paginated grades
      */
     public function getPaginated($start = 0, $length = 10, $search = '', $orderColumn = 0, $orderDir = 'desc') {
-        $columns = ['g.id', 'u.first_name', 'u.last_name', 'u.email', 's.course', 's.year_level', 'g.final_grade', 'g.created_at'];
+        $columns = ['g.id', 'u.first_name', 'u.last_name', 'u.email', 's.course', 's.year_level', 'sub.name', 'sem.name', 'gp.name', 'g.period_grade', 'g.created_at'];
         $orderBy = $columns[$orderColumn] ?? 'g.created_at';
         
         $whereClause = '';
         $params = [];
         
         if (!empty($search)) {
-            $whereClause = "WHERE (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR s.course LIKE ? OR s.year_level LIKE ?)";
+            $whereClause = "WHERE (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR s.course LIKE ? OR s.year_level LIKE ? OR sub.name LIKE ? OR sem.name LIKE ? OR gp.name LIKE ?)";
             $searchParam = "%{$search}%";
-            $params = [$searchParam, $searchParam, $searchParam, $searchParam, $searchParam];
+            $params = [$searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam];
         }
         
         $sql = "SELECT 
                     g.id,
                     g.student_id,
+                    g.subject_id,
+                    g.semester_id,
+                    g.grading_period_id,
                     g.activity_score,
                     g.quiz_score,
                     g.exam_score,
-                    g.final_grade,
+                    g.period_grade,
                     g.status,
                     g.created_at,
                     s.course,
                     s.year_level,
                     u.first_name,
                     u.last_name,
-                    u.email
+                    u.email,
+                    sub.name as subject_name,
+                    sem.name as semester_name,
+                    sem.academic_year,
+                    gp.name as grading_period_name
                 FROM grades g
                 INNER JOIN students s ON g.student_id = s.id
                 INNER JOIN users u ON s.user_id = u.id
+                INNER JOIN subjects sub ON g.subject_id = sub.id
+                INNER JOIN semesters sem ON g.semester_id = sem.id
+                INNER JOIN grading_periods gp ON g.grading_period_id = gp.id
                 {$whereClause}
                 ORDER BY {$orderBy} {$orderDir}
                 LIMIT {$start}, {$length}";
@@ -304,10 +368,14 @@ class Grades {
                 'email' => $grade['email'],
                 'course' => $grade['course'],
                 'year_level' => $grade['year_level'],
+                'subject_name' => $grade['subject_name'],
+                'semester_name' => $grade['semester_name'],
+                'academic_year' => $grade['academic_year'],
+                'grading_period_name' => ucfirst($grade['grading_period_name']),
                 'activity_score' => $grade['activity_score'],
                 'quiz_score' => $grade['quiz_score'],
                 'exam_score' => $grade['exam_score'],
-                'final_grade' => $grade['final_grade'],
+                'period_grade' => $grade['period_grade'],
                 'status' => $grade['status'],
                 'created_at' => date('M d, Y', strtotime($grade['created_at']))
             ];
@@ -324,15 +392,18 @@ class Grades {
         $params = [];
         
         if (!empty($search)) {
-            $whereClause = "WHERE (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR s.course LIKE ? OR s.year_level LIKE ?)";
+            $whereClause = "WHERE (u.first_name LIKE ? OR u.last_name LIKE ? OR u.email LIKE ? OR s.course LIKE ? OR s.year_level LIKE ? OR sub.name LIKE ? OR sem.name LIKE ? OR gp.name LIKE ?)";
             $searchParam = "%{$search}%";
-            $params = [$searchParam, $searchParam, $searchParam, $searchParam, $searchParam];
+            $params = [$searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam, $searchParam];
         }
         
         $sql = "SELECT COUNT(*) as count 
                 FROM grades g
                 INNER JOIN students s ON g.student_id = s.id
                 INNER JOIN users u ON s.user_id = u.id
+                INNER JOIN subjects sub ON g.subject_id = sub.id
+                INNER JOIN semesters sem ON g.semester_id = sem.id
+                INNER JOIN grading_periods gp ON g.grading_period_id = gp.id
                 {$whereClause}";
         
         $stmt = $this->pdo->prepare($sql);

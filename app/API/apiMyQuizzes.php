@@ -53,7 +53,7 @@ try {
                             'description' => $quiz['description'] ?? 'No description',
                             'time_limit' => $quiz['time_limit_minutes'],
                             'max_score' => $quiz['max_score'],
-                            'status' => $quiz['status'] ?? 'active'
+                            'status' => 'active' // Default status since quizzes table doesn't have status column
                         ];
                     }
                 }

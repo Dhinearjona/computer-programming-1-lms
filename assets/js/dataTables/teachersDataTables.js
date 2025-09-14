@@ -243,7 +243,6 @@ function validateEmail() {
  * Edit Teacher
  */
 function editTeacher(id) {
-    console.log('Editing teacher with ID:', id);
     currentTeacherEditId = id;
     
     fetch(`app/API/apiTeachers.php`, {
@@ -301,7 +300,6 @@ function populateTeacherForm(teacher) {
  * Delete Teacher
  */
 function deleteTeacher(id) {
-    console.log('Deleting teacher with ID:', id);
     Swal.fire({
         title: 'Are you sure?',
         text: "You won't be able to revert this!",

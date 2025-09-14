@@ -7,6 +7,7 @@ $pageName = basename($_SERVER['PHP_SELF']);
 // Initialize all menu items as collapsed
 $index = 'collapsed';
 $activities = 'collapsed';
+$teacherActivities = 'collapsed';
 $myActivities = 'collapsed';
 $myQuizzes = 'collapsed';
 $myGrades = 'collapsed';
@@ -16,6 +17,8 @@ $teachers = 'collapsed';
 $subjects = 'collapsed';
 $lessons = 'collapsed';
 $grades = 'collapsed';
+$semester = 'collapsed';
+$gradingPeriods = 'collapsed';
 $interventions = 'collapsed';
 $announcements = 'collapsed';
 $reports = 'collapsed';
@@ -26,6 +29,8 @@ if ($pageName == 'index.php') {
     $index = '';
 } elseif ($pageName == 'activities.php') {
     $activities = '';
+} elseif ($pageName == 'teacher-activities.php') {
+    $teacherActivities = '';
 } elseif ($pageName == 'my-activities.php') {
     $myActivities = '';
 } elseif ($pageName == 'my-quizzes.php') {
@@ -53,6 +58,10 @@ if ($pageName == 'index.php') {
     $announcements = '';
 } elseif ($pageName == 'reports.php') {
     $reports = '';
+} elseif ($pageName == 'semester.php') {
+    $semester = '';
+} elseif ($pageName == 'grading-periods.php') {
+    $gradingPeriods = '';
 } elseif ($pageName == 'settings.php') {
     $settings = '';
 }
@@ -71,6 +80,27 @@ if ($pageName == 'index.php') {
             </a>
         </li><!-- End Dashboard Nav -->
 
+        <!-- Academic Management Section -->
+        <?php if (Permission::isAdmin()): ?>
+        <li class="nav-heading">Academic Management</li>
+        
+        <!-- Semester Management (Admin only) -->
+        <li class="nav-item">
+            <a class="nav-link <?php echo $semester; ?>" href="semester.php">
+                <i class="bi bi-calendar3"></i>
+                <span>Semester</span>
+            </a>
+        </li><!-- End Semester Nav -->
+        
+        <!-- Grading Period Management -->
+        <li class="nav-item">
+            <a class="nav-link <?php echo $gradingPeriods; ?>" href="grading-periods.php">
+                <i class="bi bi-calendar-week"></i>
+                <span>Grading Periods</span>
+            </a>
+        </li><!-- End Grading Periods Nav -->
+        <?php endif; ?>
+
         <!-- Computer Programming 1 Section -->
         <?php if (Permission::isAdminOrTeacher()): ?>
         <li class="nav-heading">Computer Programming 1</li>
@@ -86,6 +116,16 @@ if ($pageName == 'index.php') {
         </li><!-- End Activities Nav -->
         <?php endif; ?>
 
+        <!-- Student Submissions (Teacher View) -->
+        <?php if (Permission::isAdminOrTeacher()): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $teacherActivities; ?>" href="teacher-activities.php">
+                <i class="bi bi-clipboard-check"></i>
+                <span>Student Submissions</span>
+            </a>
+        </li><!-- End Student Submissions Nav -->
+        <?php endif; ?>
+
         <!-- Quizzes Management -->
         <?php if (Permission::canManageQuizzes()): ?>
         <li class="nav-item">
@@ -96,9 +136,18 @@ if ($pageName == 'index.php') {
         </li><!-- End Quizzes Nav -->
         <?php endif; ?>
 
-        <!-- Advisory Teacher Section -->
+        <!-- Teacher Management Section -->
         <?php if (Permission::isTeacher()): ?>
-        <li class="nav-heading">Advisory Teacher</li>
+        <li class="nav-heading">Teacher Management</li>
+        
+        <!-- Grading Periods Management (Teacher) -->
+        <li class="nav-item">
+            <a class="nav-link <?php echo $gradingPeriods; ?>" href="grading-periods.php">
+                <i class="bi bi-calendar-week"></i>
+                <span>Grading Periods</span>
+            </a>
+        </li><!-- End Grading Periods Nav -->
+        
         <li class="nav-item">
             <a class="nav-link <?php echo $students; ?>" href="students.php">
                 <i class="bi bi-people"></i>
@@ -127,6 +176,16 @@ if ($pageName == 'index.php') {
         </li><!-- End Teachers Nav -->
         <?php endif; ?>
 
+        <!-- Subjects Management (Admin only) -->
+        <?php if (Permission::isAdmin()): ?>
+        <li class="nav-item">
+            <a class="nav-link <?php echo $subjects; ?>" href="subjects.php">
+                <i class="bi bi-book"></i>
+                <span>Subjects</span>
+            </a>
+        </li><!-- End Subjects Nav -->
+        <?php endif; ?>
+
         <!-- Lessons Management (Computer Programming 1) -->
         <?php if (Permission::isAdminOrTeacher()): ?>
         <li class="nav-item">
@@ -147,15 +206,6 @@ if ($pageName == 'index.php') {
         </li><!-- End Grades Nav -->
         <?php endif; ?>
 
-        <!-- My Grades (Student only) -->
-        <?php if (Permission::canViewOwnGrades()): ?>
-        <li class="nav-item">
-            <a class="nav-link <?php echo $myGrades; ?>" href="grades.php">
-                <i class="bi bi-award"></i>
-                <span>My Grades</span>
-            </a>
-        </li><!-- End My Grades Nav -->
-        <?php endif; ?>
 
         <!-- Student-specific navigation (1st Year BSIT) -->
         <?php if (Permission::isStudent()): ?>
@@ -173,6 +223,13 @@ if ($pageName == 'index.php') {
                 <span>My Quizzes</span>
             </a>
         </li><!-- End My Quizzes Nav -->
+        
+        <li class="nav-item">
+            <a class="nav-link <?php echo $myGrades; ?>" href="grades.php">
+                <i class="bi bi-award"></i>
+                <span>My Grades</span>
+            </a>
+        </li><!-- End My Grades Nav -->
         <?php endif; ?>
 
         <!-- Interventions -->

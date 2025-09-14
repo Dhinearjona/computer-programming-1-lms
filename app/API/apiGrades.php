@@ -98,37 +98,41 @@ try {
             }
             
             $student_id = $_POST['student_id'] ?? '';
+            $subject_id = $_POST['subject_id'] ?? '';
+            $semester_id = $_POST['semester_id'] ?? '';
+            $grading_period_id = $_POST['grading_period_id'] ?? '';
             $activity_score = $_POST['activity_score'] ?? '';
             $quiz_score = $_POST['quiz_score'] ?? '';
             $exam_score = $_POST['exam_score'] ?? '';
-            $final_grade = $_POST['final_grade'] ?? '';
+            $period_grade = $_POST['period_grade'] ?? '';
+            $status = $_POST['status'] ?? '';
             
             // Validation
-            if (empty($student_id) || empty($activity_score) || empty($quiz_score) || empty($exam_score) || empty($final_grade)) {
+            if (empty($student_id) || empty($subject_id) || empty($semester_id) || empty($grading_period_id) || empty($activity_score) || empty($quiz_score) || empty($exam_score) || empty($period_grade) || empty($status)) {
                 throw new Exception('All fields are required');
             }
             
-            if (!is_numeric($student_id)) {
-                throw new Exception('Invalid student selection');
+            if (!is_numeric($student_id) || !is_numeric($subject_id) || !is_numeric($semester_id) || !is_numeric($grading_period_id)) {
+                throw new Exception('Invalid selection');
             }
             
-            if (!is_numeric($activity_score) || !is_numeric($quiz_score) || !is_numeric($exam_score) || !is_numeric($final_grade)) {
+            if (!is_numeric($activity_score) || !is_numeric($quiz_score) || !is_numeric($exam_score) || !is_numeric($period_grade)) {
                 throw new Exception('All scores must be numeric');
             }
             
-            if ($activity_score < 0 || $activity_score > 100 || $quiz_score < 0 || $quiz_score > 100 || $exam_score < 0 || $exam_score > 100 || $final_grade < 0 || $final_grade > 100) {
+            if ($activity_score < 0 || $activity_score > 100 || $quiz_score < 0 || $quiz_score > 100 || $exam_score < 0 || $exam_score > 100 || $period_grade < 0 || $period_grade > 100) {
                 throw new Exception('All scores must be between 0 and 100');
             }
             
-            // Determine status based on final grade
-            $status = ($final_grade >= 75) ? 'pass' : 'fail';
-            
             $data = [
                 'student_id' => $student_id,
+                'subject_id' => $subject_id,
+                'semester_id' => $semester_id,
+                'grading_period_id' => $grading_period_id,
                 'activity_score' => $activity_score,
                 'quiz_score' => $quiz_score,
                 'exam_score' => $exam_score,
-                'final_grade' => $final_grade,
+                'period_grade' => $period_grade,
                 'status' => $status
             ];
             
@@ -143,37 +147,41 @@ try {
             
             $id = $_POST['id'] ?? '';
             $student_id = $_POST['student_id'] ?? '';
+            $subject_id = $_POST['subject_id'] ?? '';
+            $semester_id = $_POST['semester_id'] ?? '';
+            $grading_period_id = $_POST['grading_period_id'] ?? '';
             $activity_score = $_POST['activity_score'] ?? '';
             $quiz_score = $_POST['quiz_score'] ?? '';
             $exam_score = $_POST['exam_score'] ?? '';
-            $final_grade = $_POST['final_grade'] ?? '';
+            $period_grade = $_POST['period_grade'] ?? '';
+            $status = $_POST['status'] ?? '';
             
             // Validation
-            if (empty($id) || empty($student_id) || empty($activity_score) || empty($quiz_score) || empty($exam_score) || empty($final_grade)) {
+            if (empty($id) || empty($student_id) || empty($subject_id) || empty($semester_id) || empty($grading_period_id) || empty($activity_score) || empty($quiz_score) || empty($exam_score) || empty($period_grade) || empty($status)) {
                 throw new Exception('All fields are required');
             }
             
-            if (!is_numeric($id) || !is_numeric($student_id)) {
-                throw new Exception('Invalid ID or student selection');
+            if (!is_numeric($id) || !is_numeric($student_id) || !is_numeric($subject_id) || !is_numeric($semester_id) || !is_numeric($grading_period_id)) {
+                throw new Exception('Invalid ID or selection');
             }
             
-            if (!is_numeric($activity_score) || !is_numeric($quiz_score) || !is_numeric($exam_score) || !is_numeric($final_grade)) {
+            if (!is_numeric($activity_score) || !is_numeric($quiz_score) || !is_numeric($exam_score) || !is_numeric($period_grade)) {
                 throw new Exception('All scores must be numeric');
             }
             
-            if ($activity_score < 0 || $activity_score > 100 || $quiz_score < 0 || $quiz_score > 100 || $exam_score < 0 || $exam_score > 100 || $final_grade < 0 || $final_grade > 100) {
+            if ($activity_score < 0 || $activity_score > 100 || $quiz_score < 0 || $quiz_score > 100 || $exam_score < 0 || $exam_score > 100 || $period_grade < 0 || $period_grade > 100) {
                 throw new Exception('All scores must be between 0 and 100');
             }
             
-            // Determine status based on final grade
-            $status = ($final_grade >= 75) ? 'pass' : 'fail';
-            
             $data = [
                 'student_id' => $student_id,
+                'subject_id' => $subject_id,
+                'semester_id' => $semester_id,
+                'grading_period_id' => $grading_period_id,
                 'activity_score' => $activity_score,
                 'quiz_score' => $quiz_score,
                 'exam_score' => $exam_score,
-                'final_grade' => $final_grade,
+                'period_grade' => $period_grade,
                 'status' => $status
             ];
             
@@ -202,6 +210,15 @@ try {
             
             $students = $grades->getAllStudents();
             echo json_encode(['success' => true, 'data' => $students]);
+            break;
+            
+        case 'get_subjects':
+            if (!Permission::canManageGrades()) {
+                throw new Exception('Access denied');
+            }
+            
+            $subjects = $grades->getAllSubjects();
+            echo json_encode(['success' => true, 'data' => $subjects]);
             break;
             
         case 'statistics':

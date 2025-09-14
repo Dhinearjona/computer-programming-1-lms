@@ -32,6 +32,10 @@
 <script src="assets/js/dataTables/lessonsDataTables.js"></script>
 <script src="assets/js/dataTables/myActivitiesDataTables.js"></script>
 <script src="assets/js/dataTables/myQuizzesDataTables.js"></script>
+<script src="assets/js/dataTables/teacherSubmissionsDataTables.js"></script>
+<script src="assets/js/dataTables/gradingPeriodsDataTables.js"></script>
+<script src="assets/js/dataTables/semestersDataTables.js"></script>
+<script src="assets/js/dataTables/subjectsDataTables.js"></script>
 
 <!-- Main Template -->
 <script src="assets/js/main.js"></script>

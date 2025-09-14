@@ -236,6 +236,73 @@ class Permission {
     }
     
     // ========================
+    // SEMESTER MANAGEMENT PERMISSIONS
+    // ========================
+    
+    /**
+     * Can manage semesters (Admin only)
+     */
+    public static function canManageSemesters(): bool {
+        return self::getUserRole() === 'admin';
+    }
+    
+    /**
+     * Can add semesters (Admin only)
+     */
+    public static function canAddSemesters(): bool {
+        return self::getUserRole() === 'admin';
+    }
+    
+    /**
+     * Can edit semesters (Admin only)
+     */
+    public static function canEditSemesters(): bool {
+        return self::getUserRole() === 'admin';
+    }
+    
+    /**
+     * Can delete semesters (Admin only)
+     */
+    public static function canDeleteSemesters(): bool {
+        return self::getUserRole() === 'admin';
+    }
+    
+    // ========================
+    // GRADING PERIODS PERMISSIONS
+    // ========================
+    
+    /**
+     * Can manage grading periods (Admin and Teacher)
+     */
+    public static function canManageGradingPeriods(): bool {
+        $role = self::getUserRole();
+        return in_array($role, ['admin', 'teacher']);
+    }
+    
+    /**
+     * Can add grading periods (Admin and Teacher)
+     */
+    public static function canAddGradingPeriods(): bool {
+        $role = self::getUserRole();
+        return in_array($role, ['admin', 'teacher']);
+    }
+    
+    /**
+     * Can edit grading periods (Admin and Teacher)
+     */
+    public static function canEditGradingPeriods(): bool {
+        $role = self::getUserRole();
+        return in_array($role, ['admin', 'teacher']);
+    }
+    
+    /**
+     * Can delete grading periods (Admin only)
+     */
+    public static function canDeleteGradingPeriods(): bool {
+        return self::getUserRole() === 'admin';
+    }
+    
+    // ========================
     // SYSTEM SETTINGS PERMISSIONS
     // ========================
     

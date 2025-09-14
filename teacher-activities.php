@@ -22,8 +22,8 @@ $username = $user['first_name'] . ' ' . $user['last_name'];
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
 
-// Check if user is student
-if (!Permission::isStudent()) {
+// Check if user is teacher or admin
+if (!Permission::isAdminOrTeacher()) {
     header('Location: index.php');
     exit();
 }
@@ -36,11 +36,11 @@ require_once __DIR__ . '/components/sideNav.php';
 
 <main id="main" class="main">
     <div class="pagetitle">
-        <h1>My Activities</h1>
+        <h1>Student Submissions</h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                <li class="breadcrumb-item active">My Activities</li>
+                <li class="breadcrumb-item active">Student Submissions</li>
             </ol>
         </nav>
     </div>
@@ -51,10 +51,9 @@ require_once __DIR__ . '/components/sideNav.php';
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="card-title">My Activities List</h5>
+                            <h5 class="card-title">Student Activity Submissions</h5>
                             <div class="btn-group">
-                                <button type="button" class="btn btn-outline-info" onclick="refreshActivitiesTable()"
-                                    title="Refresh">
+                                <button type="button" class="btn btn-outline-info" onclick="refreshSubmissionsTable()" title="Refresh">
                                     <i class="bi bi-arrow-clockwise"></i> Refresh
                                 </button>
                             </div>
@@ -62,15 +61,15 @@ require_once __DIR__ . '/components/sideNav.php';
 
                         <!-- DataTable -->
                         <div class="table-responsive">
-                            <table class="table table-striped" id="myActivitiesTable">
+                            <table class="table table-striped" id="submissionsTable">
                                 <thead>
                                     <tr>
-                                        <th>Title</th>
+                                        <th>Student</th>
+                                        <th>Activity</th>
                                         <th>Subject</th>
-                                        <th>Description</th>
-                                        <th>Due Date</th>
-                                        <th>Submission</th>
+                                        <th>Submission Date</th>
                                         <th>Status</th>
+                                        <th>Grade</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -85,17 +84,17 @@ require_once __DIR__ . '/components/sideNav.php';
     </section>
 </main>
 
-<!-- Activity Details Modal -->
-<div class="modal fade" id="activityDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<!-- Submission Details Modal -->
+<div class="modal fade" id="submissionDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="activityDetailsTitle">Activity Details</h5>
+                <h5 class="modal-title" id="submissionDetailsTitle">Submission Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="activityDetailsContent">
-                    <!-- Activity details will be loaded here -->
+                <div id="submissionDetailsContent">
+                    <!-- Submission details will be loaded here -->
                 </div>
             </div>
             <div class="modal-footer">
@@ -105,46 +104,59 @@ require_once __DIR__ . '/components/sideNav.php';
     </div>
 </div>
 
-<!-- Submission Modal -->
-<div class="modal fade" id="submissionModal" tabindex="-1">
+<!-- Grade Submission Modal -->
+<div class="modal fade" id="gradeSubmissionModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="submissionModalTitle">Submit Activity</h5>
+                <h5 class="modal-title" id="gradeSubmissionTitle">Grade Submission</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="submissionForm">
-                    <input type="hidden" id="submissionActivityId" name="activity_id">
-                    <input type="hidden" id="submissionAction" name="action" value="submit_activity">
-
-                    <div class="mb-3">
-                        <label for="submissionLink" class="form-label">
-                            <i class="bi bi-link-45deg"></i> Submission Link
-                        </label>
-                        <input type="url" class="form-control" id="submissionLink" name="submission_link"
-                            placeholder="https://drive.google.com/file/d/..." required>
+                <form id="gradeSubmissionForm">
+                    <input type="hidden" id="gradeSubmissionId" name="submission_id">
+                    <input type="hidden" id="gradeAction" name="action" value="grade_submission">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="gradeScore" class="form-label">
+                                    <i class="bi bi-star"></i> Score
+                                </label>
+                                <input type="number" class="form-control" id="gradeScore" name="score" 
+                                       min="0" max="100" step="0.01" required>
+                                <div class="form-text">Enter score out of 100</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="gradeMaxScore" class="form-label">
+                                    <i class="bi bi-award"></i> Max Score
+                                </label>
+                                <input type="number" class="form-control" id="gradeMaxScore" name="max_score" 
+                                       min="1" max="100" step="0.01" required>
+                            </div>
+                        </div>
                     </div>
-
+                    
                     <div class="mb-3">
-                        <label for="submissionText" class="form-label">
-                            <i class="bi bi-chat-text"></i> Additional Notes (Optional)
+                        <label for="gradeComments" class="form-label">
+                            <i class="bi bi-chat-text"></i> Comments
                         </label>
-                        <textarea class="form-control" id="submissionText" name="submission_text" rows="3"
-                            placeholder="Add any additional notes or comments about your submission..."></textarea>
+                        <textarea class="form-control" id="gradeComments" name="comments" rows="4" 
+                                  placeholder="Add feedback and comments for the student..."></textarea>
                     </div>
-
+                    
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i>
-                        <strong>Note:</strong> You can submit and unsubmit your work until the due date.
-                        Make sure your link is accessible and contains your completed work.
+                        <strong>Note:</strong> Grades will be visible to students once submitted.
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitActivity()">
-                    Submit
+                <button type="button" class="btn btn-success" onclick="submitGrade()">
+                    <i class="bi bi-check-circle"></i> Submit
                 </button>
             </div>
         </div>
@@ -157,7 +169,7 @@ require_once __DIR__ . '/components/sideNav.php';
 <!-- Pass permissions to JavaScript -->
 <script>
     window.currentUserRole = '<?php echo $userRole; ?>';
-    window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
+    window.isTeacher = <?php echo Permission::isAdminOrTeacher() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
 </script>
 

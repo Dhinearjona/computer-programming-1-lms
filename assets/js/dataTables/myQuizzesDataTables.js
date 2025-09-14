@@ -1,7 +1,13 @@
-let myQuizzesTable;
+var myQuizzesTable;
 
 $(document).ready(function() {
+    // Prevent multiple initializations
+    if (window.myQuizzesTableInitialized) {
+        return;
+    }
+    
     initializeMyQuizzesTable();
+    window.myQuizzesTableInitialized = true;
 });
 
 function initializeMyQuizzesTable() {
@@ -71,7 +77,10 @@ function initializeMyQuizzesTable() {
                     let badgeClass = '';
                     let badgeText = '';
                     
-                    switch(row.status) {
+                    // Handle undefined or null status
+                    const status = row.status || 'active';
+                    
+                    switch(status) {
                         case 'active':
                             badgeClass = 'badge bg-success';
                             badgeText = 'Active';
@@ -85,8 +94,8 @@ function initializeMyQuizzesTable() {
                             badgeText = 'Draft';
                             break;
                         default:
-                            badgeClass = 'badge bg-secondary';
-                            badgeText = 'Unknown';
+                            badgeClass = 'badge bg-success';
+                            badgeText = 'Active';
                     }
                     
                     return `<span class="${badgeClass}">${badgeText}</span>`;
@@ -149,7 +158,7 @@ function viewQuizDetails(id) {
                 <div class="row">
                     <div class="col-md-6">
                         <h6><strong>Status:</strong></h6>
-                        <p><span class="badge ${quiz.status === 'active' ? 'bg-success' : quiz.status === 'inactive' ? 'bg-secondary' : 'bg-warning'}">${quiz.status}</span></p>
+                        <p><span class="badge ${(quiz.status || 'active') === 'active' ? 'bg-success' : (quiz.status || 'active') === 'inactive' ? 'bg-secondary' : 'bg-warning'}">${quiz.status || 'Active'}</span></p>
                     </div>
                     <div class="col-md-6">
                         <h6><strong>Created:</strong></h6>

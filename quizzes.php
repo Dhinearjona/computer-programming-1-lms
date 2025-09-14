@@ -4,9 +4,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Prevent caching
-header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-header("Pragma: no-cache");
-header("Expires: 0");
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 
 // Check if logged in
 if (!isset($_SESSION['user']) || empty($_SESSION['user'])) {
@@ -70,7 +70,8 @@ require_once __DIR__ . '/components/sideNav.php';
                                     <i class="bi bi-download"></i> Export
                                 </button>
                                 <?php if (Permission::canAddQuizzes()): ?>
-                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quizModal">
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                    data-bs-target="#quizModal">
                                     Add New Quiz
                                 </button>
                                 <?php endif; ?>
@@ -131,19 +132,23 @@ require_once __DIR__ . '/components/sideNav.php';
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label for="title" class="form-label">Quiz Title <span class="text-danger">*</span></label>
+                            <label for="title" class="form-label">Quiz Title <span
+                                    class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="title" name="title" required>
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="max_score" class="form-label">Max Score <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="max_score" name="max_score" value="100" min="1" max="1000" required>
+                            <label for="max_score" class="form-label">Max Score <span
+                                    class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="max_score" name="max_score" value="100"
+                                min="1" max="1000" required>
                         </div>
                         <div class="col-md-6">
                             <label for="time_limit_minutes" class="form-label">Time Limit (minutes)</label>
-                            <input type="number" class="form-control" id="time_limit_minutes" name="time_limit_minutes" min="1" max="300" placeholder="Optional">
+                            <input type="number" class="form-control" id="time_limit_minutes" name="time_limit_minutes"
+                                min="1" max="300" placeholder="Optional">
                         </div>
                     </div>
                 </form>
@@ -158,12 +163,12 @@ require_once __DIR__ . '/components/sideNav.php';
 <?php endif; ?>
 
 <script>
-// Set current user role and permissions for JavaScript use
-window.currentUserRole = '<?php echo $userRole; ?>';
-window.canAddQuizzes = <?php echo Permission::canAddQuizzes() ? 'true' : 'false'; ?>;
-window.canEditQuizzes = <?php echo Permission::canEditQuizzes() ? 'true' : 'false'; ?>;
-window.canDeleteQuizzes = <?php echo Permission::canDeleteQuizzes() ? 'true' : 'false'; ?>;
-window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
+    // Set current user role and permissions for JavaScript use
+    window.currentUserRole = '<?php echo $userRole; ?>';
+    window.canAddQuizzes = <?php echo Permission::canAddQuizzes() ? 'true' : 'false'; ?>;
+    window.canEditQuizzes = <?php echo Permission::canEditQuizzes() ? 'true' : 'false'; ?>;
+    window.canDeleteQuizzes = <?php echo Permission::canDeleteQuizzes() ? 'true' : 'false'; ?>;
+    window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
 </script>
 
 <?php require_once __DIR__ . '/components/footer.php'; ?>

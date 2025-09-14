@@ -3,19 +3,39 @@
  */
 
 // Global variables
-let quizzesTable;
-let currentQuizEditId = null;
+var quizzesTable;
+var currentQuizEditId = null;
 
 $(document).ready(function() {
+    console.log('Document ready - initializing quizzes...');
+    // Prevent multiple initializations
+    if (window.quizzesTableInitialized) {
+        console.log('Quizzes already initialized, skipping...');
+        return;
+    }
+    
     initializeQuizzesTable();
     setupModalEvents();
+    
+    // Load lessons immediately to ensure they're available
+    console.log('Loading lessons on document ready...');
     loadLessons();
+    
+    window.quizzesTableInitialized = true;
+    console.log('Quizzes initialization complete');
+    // Note: loadLessons() will also be called when modal opens
 });
 
 /**
  * Initialize Quizzes DataTable
  */
 function initializeQuizzesTable() {
+    // Check if DataTable already exists
+    if ($.fn.DataTable.isDataTable('#quizzesTable')) {
+        quizzesTable = $('#quizzesTable').DataTable();
+        return;
+    }
+    
     quizzesTable = $('#quizzesTable').DataTable({
         "processing": true,
         "serverSide": false,
@@ -110,6 +130,18 @@ function setupModalEvents() {
         resetQuizForm();
     });
     
+    // Load lessons when modal is shown
+    $('#quizModal').on('shown.bs.modal', function () {
+        console.log('Modal shown event triggered');
+        loadLessons();
+    });
+    
+    // Also try loading lessons when modal is about to show
+    $('#quizModal').on('show.bs.modal', function () {
+        console.log('Modal show event triggered');
+        loadLessons();
+    });
+    
     // Form validation
     $('#quizForm').on('submit', function(e) {
         e.preventDefault();
@@ -121,25 +153,62 @@ function setupModalEvents() {
  * Load lessons for dropdown
  */
 function loadLessons() {
-    fetch("app/API/apiQuizzes.php?action=get_lessons")
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.success) {
-                const select = document.getElementById("lesson_id");
-                if (select) {
-                    select.innerHTML = '<option value="">Select Lesson</option>';
-                    data.data.forEach((lesson) => {
-                        const option = document.createElement("option");
-                        option.value = lesson.id;
-                        option.textContent = lesson.title;
-                        select.appendChild(option);
-                    });
+    console.log('Loading lessons...');
+    
+    // Wait a bit to ensure the modal is fully loaded
+    setTimeout(() => {
+        fetch("app/API/apiQuizzes.php?action=get_lessons")
+            .then((response) => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then((data) => {
+                console.log('API Response:', data);
+                if (data.success) {
+                    const select = document.getElementById("lesson_id");
+                    console.log('Select element found:', select);
+                    if (select) {
+                        select.innerHTML = '<option value="">Select Lesson</option>';
+                        if (data.data && data.data.length > 0) {
+                            console.log('Adding lessons:', data.data.length);
+                            data.data.forEach((lesson) => {
+                                const option = document.createElement("option");
+                                option.value = lesson.id;
+                                option.textContent = lesson.title;
+                                select.appendChild(option);
+                                console.log('Added lesson:', lesson.title);
+                            });
+                        } else {
+                            console.log('No lessons data found');
+                            select.innerHTML = '<option value="">No lessons available</option>';
+                        }
+                    } else {
+                        console.error('Select element not found!');
+                        // Try again after a short delay
+                        setTimeout(() => {
+                            const select2 = document.getElementById("lesson_id");
+                            if (select2) {
+                                console.log('Select element found on retry');
+                                select2.innerHTML = '<option value="">Select Lesson</option>';
+                                if (data.data && data.data.length > 0) {
+                                    data.data.forEach((lesson) => {
+                                        const option = document.createElement("option");
+                                        option.value = lesson.id;
+                                        option.textContent = lesson.title;
+                                        select2.appendChild(option);
+                                    });
+                                }
+                            }
+                        }, 500);
+                    }
+                } else {
+                    console.error('API returned error:', data.message);
                 }
-            }
-        })
-        .catch((error) => {
-            console.error("Error loading lessons:", error);
-        });
+            })
+            .catch((error) => {
+                console.error("Error loading lessons:", error);
+            });
+    }, 100);
 }
 
 /**
@@ -151,6 +220,9 @@ function resetQuizForm() {
     document.getElementById('modalTitle').textContent = 'Add New Quiz';
     document.getElementById('quizId').value = '';
     currentQuizEditId = null;
+    
+    // Reload lessons after form reset
+    loadLessons();
     
     // Reset validation classes
     $('#quizForm .form-control').removeClass('is-valid is-invalid');
@@ -244,10 +316,8 @@ function editQuiz(id) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            populateQuizForm(data.data);
-            document.getElementById('formAction').value = 'update_quiz';
-            document.getElementById('modalTitle').textContent = 'Edit Quiz';
-            $('#quizModal').modal('show');
+            // Load lessons first, then populate form
+            loadLessonsForEdit(data.data);
         } else {
             Swal.fire({
                 icon: 'error',
@@ -267,14 +337,64 @@ function editQuiz(id) {
 }
 
 /**
+ * Load lessons for edit mode
+ */
+function loadLessonsForEdit(quizData) {
+    console.log('Loading lessons for edit mode...');
+    
+    fetch("app/API/apiQuizzes.php?action=get_lessons")
+        .then((response) => response.json())
+        .then((data) => {
+            console.log('Lessons loaded for edit:', data);
+            if (data.success) {
+                const select = document.getElementById("lesson_id");
+                if (select) {
+                    select.innerHTML = '<option value="">Select Lesson</option>';
+                    if (data.data && data.data.length > 0) {
+                        data.data.forEach((lesson) => {
+                            const option = document.createElement("option");
+                            option.value = lesson.id;
+                            option.textContent = lesson.title;
+                            select.appendChild(option);
+                        });
+                        
+                        // Now populate the form with quiz data
+                        populateQuizForm(quizData);
+                        
+                        // Set form action and title
+                        document.getElementById('formAction').value = 'update_quiz';
+                        document.getElementById('modalTitle').textContent = 'Edit Quiz';
+                        
+                        // Show the modal
+                        $('#quizModal').modal('show');
+                    } else {
+                        console.log('No lessons data found');
+                        select.innerHTML = '<option value="">No lessons available</option>';
+                    }
+                } else {
+                    console.error('Select element not found!');
+                }
+            } else {
+                console.error('API returned error:', data.message);
+            }
+        })
+        .catch((error) => {
+            console.error("Error loading lessons for edit:", error);
+        });
+}
+
+/**
  * Populate quiz form with data
  */
 function populateQuizForm(quiz) {
+    console.log('Populating quiz form with data:', quiz);
     document.getElementById('quizId').value = quiz.id;
     document.getElementById('lesson_id').value = quiz.lesson_id;
     document.getElementById('title').value = quiz.title;
     document.getElementById('max_score').value = quiz.max_score;
     document.getElementById('time_limit_minutes').value = quiz.time_limit_minutes || '';
+    
+    console.log('Form populated. Lesson ID set to:', quiz.lesson_id);
 }
 
 /**

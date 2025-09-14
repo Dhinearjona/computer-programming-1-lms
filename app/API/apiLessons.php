@@ -15,15 +15,18 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
-// Check permissions
-if (!Permission::isAdminOrTeacher()) {
+// Check permissions based on action
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
+$readOnlyActions = ['get_subjects', 'get_lessons_by_subject'];
+
+// Allow students to access read-only actions
+if (!in_array($action, $readOnlyActions) && !Permission::isAdminOrTeacher()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Access denied']);
     exit;
 }
 
 $lessons = new Lessons();
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 try {
     switch ($action) {

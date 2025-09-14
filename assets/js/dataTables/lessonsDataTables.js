@@ -9,7 +9,7 @@ let currentLessonEditId = null;
 $(document).ready(function() {
     initializeLessonsTable();
     setupModalEvents();
-    loadSubjects();
+    // Note: CommonAPI.loadSubjects() will be called when modal opens
 });
 
 /**
@@ -97,6 +97,11 @@ function setupModalEvents() {
     // Reset modal when closed
     $('#lessonModal').on('hidden.bs.modal', function () {
         resetLessonForm();
+    });
+    
+    // Load subjects when modal is shown
+    $('#lessonModal').on('shown.bs.modal', function () {
+        CommonAPI.loadSubjects();
     });
     
     // Form validation
@@ -207,35 +212,11 @@ function validateLessonForm() {
     return isValid;
 }
 
-/**
- * Load subjects for dropdown
- */
-function loadSubjects() {
-    fetch('app/API/apiLessons.php?action=get_subjects')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const subjectSelect = document.getElementById('subject_id');
-            subjectSelect.innerHTML = '<option value="">Select Subject</option>';
-            
-            data.data.forEach(subject => {
-                const option = document.createElement('option');
-                option.value = subject.id;
-                option.textContent = subject.name;
-                subjectSelect.appendChild(option);
-            });
-        }
-    })
-    .catch(error => {
-        console.error('Error loading subjects:', error);
-    });
-}
 
 /**
  * Edit Lesson
  */
 function editLesson(id) {
-    console.log('Editing lesson with ID:', id);
     currentLessonEditId = id;
     
     fetch(`app/API/apiLessons.php`, {
@@ -285,7 +266,6 @@ function populateLessonForm(lesson) {
  * Delete Lesson
  */
 function deleteLesson(id) {
-    console.log('Deleting lesson with ID:', id);
     Swal.fire({
         title: 'Are you sure?',
         text: "You won't be able to revert this!",

@@ -3,19 +3,39 @@
  */
 
 // Global variables
-let activitiesTable;
-let currentEditId = null;
+var activitiesTable;
+var currentEditId = null;
 
 $(document).ready(function() {
+    console.log('Document ready - initializing activities...');
+    // Prevent multiple initializations
+    if (window.activitiesTableInitialized) {
+        console.log('Activities already initialized, skipping...');
+        return;
+    }
+    
     initializeActivitiesTable();
     setupModalEvents();
+    
+    // Load subjects immediately to ensure they're available
+    console.log('Loading subjects on document ready...');
     loadSubjects();
+    
+    window.activitiesTableInitialized = true;
+    console.log('Activities initialization complete');
+    // Note: loadSubjects() will also be called when modal opens
 });
 
 /**
  * Initialize Activities DataTable
  */
 function initializeActivitiesTable() {
+    // Check if DataTable is already initialized
+    if ($.fn.DataTable.isDataTable('#activitiesTable')) {
+        console.log('DataTable already initialized, destroying and recreating...');
+        $('#activitiesTable').DataTable().destroy();
+    }
+    
     activitiesTable = $('#activitiesTable').DataTable({
         "processing": true,
         "serverSide": false,
@@ -107,6 +127,18 @@ function setupModalEvents() {
     // Reset modal when closed
     $('#activityModal').on('hidden.bs.modal', function () {
         resetActivityForm();
+    });
+    
+    // Load subjects when modal is shown
+    $('#activityModal').on('shown.bs.modal', function () {
+        console.log('Modal shown event triggered');
+        loadSubjects();
+    });
+    
+    // Also try loading subjects when modal is about to show
+    $('#activityModal').on('show.bs.modal', function () {
+        console.log('Modal show event triggered');
+        loadSubjects();
     });
     
     // Form validation
@@ -218,10 +250,8 @@ function editActivity(id) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            populateActivityForm(data.data);
-            document.getElementById('formAction').value = 'update_activity';
-            document.getElementById('modalTitle').textContent = 'Edit Activity';
-            $('#activityModal').modal('show');
+            // Load subjects first, then populate form
+            loadSubjectsForEdit(data.data);
         } else {
             Swal.fire({
                 icon: 'error',
@@ -241,9 +271,57 @@ function editActivity(id) {
 }
 
 /**
+ * Load subjects for edit mode
+ */
+function loadSubjectsForEdit(activityData) {
+    console.log('Loading subjects for edit mode...');
+    
+    fetch("app/API/apiActivities.php?action=get_subjects")
+        .then((response) => response.json())
+        .then((data) => {
+            console.log('Subjects loaded for edit:', data);
+            if (data.success) {
+                const select = document.getElementById("subject_id");
+                if (select) {
+                    select.innerHTML = '<option value="">Select Subject</option>';
+                    if (data.data && data.data.length > 0) {
+                        data.data.forEach((subject) => {
+                            const option = document.createElement("option");
+                            option.value = subject.id;
+                            option.textContent = subject.name;
+                            select.appendChild(option);
+                        });
+                        
+                        // Now populate the form with activity data
+                        populateActivityForm(activityData);
+                        
+                        // Set form action and title
+                        document.getElementById('formAction').value = 'update_activity';
+                        document.getElementById('modalTitle').textContent = 'Edit Activity';
+                        
+                        // Show the modal
+                        $('#activityModal').modal('show');
+                    } else {
+                        console.log('No subjects data found');
+                        select.innerHTML = '<option value="">No subjects available</option>';
+                    }
+                } else {
+                    console.error('Select element not found!');
+                }
+            } else {
+                console.error('API returned error:', data.message);
+            }
+        })
+        .catch((error) => {
+            console.error("Error loading subjects for edit:", error);
+        });
+}
+
+/**
  * Populate activity form with data
  */
 function populateActivityForm(activity) {
+    console.log('Populating activity form with data:', activity);
     document.getElementById('activityId').value = activity.id;
     document.getElementById('subject_id').value = activity.subject_id;
     document.getElementById('title').value = activity.title;
@@ -254,6 +332,8 @@ function populateActivityForm(activity) {
     document.getElementById('reminder_date').value = activity.reminder_date || '';
     document.getElementById('deduction_percent').value = activity.deduction_percent || 0;
     document.getElementById('status').value = activity.status || 'active';
+    
+    console.log('Form populated. Subject ID set to:', activity.subject_id);
 }
 
 /**
@@ -366,26 +446,62 @@ function deleteActivity(id) {
  * Load subjects for dropdown
  */
 function loadSubjects() {
-    fetch("app/API/apiActivities.php?action=get_subjects")
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.success) {
-                const select = document.getElementById("subject_id");
-                if (select) {
-                    select.innerHTML = '<option value="">Select Subject</option>';
-
-                    data.data.forEach((subject) => {
-                        const option = document.createElement("option");
-                        option.value = subject.id;
-                        option.textContent = subject.name;
-                        select.appendChild(option);
-                    });
+    console.log('Loading subjects...');
+    
+    // Wait a bit to ensure the modal is fully loaded
+    setTimeout(() => {
+        fetch("app/API/apiActivities.php?action=get_subjects")
+            .then((response) => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then((data) => {
+                console.log('API Response:', data);
+                if (data.success) {
+                    const select = document.getElementById("subject_id");
+                    console.log('Select element found:', select);
+                    if (select) {
+                        select.innerHTML = '<option value="">Select Subject</option>';
+                        if (data.data && data.data.length > 0) {
+                            console.log('Adding subjects:', data.data.length);
+                            data.data.forEach((subject) => {
+                                const option = document.createElement("option");
+                                option.value = subject.id;
+                                option.textContent = subject.name;
+                                select.appendChild(option);
+                                console.log('Added subject:', subject.name);
+                            });
+                        } else {
+                            console.log('No subjects data found');
+                            select.innerHTML = '<option value="">No subjects available</option>';
+                        }
+                    } else {
+                        console.error('Select element not found!');
+                        // Try again after a short delay
+                        setTimeout(() => {
+                            const select2 = document.getElementById("subject_id");
+                            if (select2) {
+                                console.log('Select element found on retry');
+                                select2.innerHTML = '<option value="">Select Subject</option>';
+                                if (data.data && data.data.length > 0) {
+                                    data.data.forEach((subject) => {
+                                        const option = document.createElement("option");
+                                        option.value = subject.id;
+                                        option.textContent = subject.name;
+                                        select2.appendChild(option);
+                                    });
+                                }
+                            }
+                        }, 500);
+                    }
+                } else {
+                    console.error('API returned error:', data.message);
                 }
-            }
-        })
-        .catch((error) => {
-            console.error("Error loading subjects:", error);
-        });
+            })
+            .catch((error) => {
+                console.error("Error loading subjects:", error);
+            });
+    }, 100);
 }
 
 /**

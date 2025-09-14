@@ -9,8 +9,7 @@ let currentInterventionEditId = null;
 $(document).ready(function () {
   initializeInterventionsTable();
   setupModalEvents();
-  loadStudents();
-  loadSubjects();
+  // Note: loadStudents() and CommonAPI.loadSubjects() will be called when modal opens
 });
 
 /**
@@ -96,6 +95,12 @@ function setupModalEvents() {
   // Reset modal when closed
   $("#interventionModal").on("hidden.bs.modal", function () {
     resetInterventionForm();
+  });
+
+  // Load data when modal is shown
+  $("#interventionModal").on("shown.bs.modal", function () {
+    loadStudents();
+    CommonAPI.loadSubjects();
   });
 
   // Form validation
@@ -236,7 +241,6 @@ function saveIntervention() {
  * Edit intervention
  */
 function editIntervention(id) {
-  console.log('Editing intervention with ID:', id);
   currentInterventionEditId = id;
 
   fetch(`app/API/apiInterventions.php`, {
@@ -289,7 +293,6 @@ function editIntervention(id) {
  * Delete intervention
  */
 function deleteIntervention(id) {
-  console.log('Deleting intervention with ID:', id);
   Swal.fire({
     title: "Are you sure?",
     text: "You won't be able to revert this!",

@@ -321,8 +321,45 @@ const NumericValidation = {
     }
 };
 
+// Common API functions
+const CommonAPI = {
+    /**
+     * Load subjects for dropdown
+     */
+    loadSubjects: function() {
+        fetch('app/API/apiLessons.php?action=get_subjects')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const subjectSelect = document.getElementById('subject_id');
+                if (subjectSelect) {
+                    subjectSelect.innerHTML = '<option value="">Select Subject</option>';
+                    
+                    data.data.forEach(subject => {
+                        const option = document.createElement('option');
+                        option.value = subject.id;
+                        option.textContent = subject.name;
+                        subjectSelect.appendChild(option);
+                    });
+                }
+            } else {
+                console.error('Error loading subjects:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading subjects:', error);
+        });
+    }
+};
+
 // Export utilities for use in other modules
 window.DataTableDefaults = DataTableDefaults;
 window.DataTableRenderers = DataTableRenderers;
 window.FormUtils = FormUtils;
-window.NumericValidation = NumericValidation; 
+window.NumericValidation = NumericValidation;
+window.CommonAPI = CommonAPI; 

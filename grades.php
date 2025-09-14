@@ -83,20 +83,26 @@ require_once __DIR__ . '/components/sideNav.php';
                             <table class="table table-striped" id="gradesTable">
                                 <thead>
                                     <tr>
-                                        <?php if (!Permission::isStudent()): ?>
-                                        <th>ID</th>
-                                        <th>Full Name</th>
-                                        <th>Email</th>
-                                        <th>Course</th>
-                                        <th>Year Level</th>
-                                        <?php endif; ?>
+                                        <?php if (Permission::isStudent()): ?>
+                                        <th>Subject</th>
+                                        <th>Semester</th>
+                                        <th>Grading Period</th>
                                         <th>Activity Score</th>
                                         <th>Quiz Score</th>
                                         <th>Exam Score</th>
-                                        <th>Final Grade</th>
+                                        <th>Period Grade</th>
+                                        <th>Status</th>
+                                        <?php else: ?>
+                                        <th>Full Name</th>
+                                        <th>Grading Period</th>
+                                        <th>Activity Score</th>
+                                        <th>Quiz Score</th>
+                                        <th>Exam Score</th>
+                                        <th>Period Grade</th>
                                         <th>Status</th>
                                         <?php if (Permission::canManageGrades()): ?>
                                         <th>Actions</th>
+                                        <?php endif; ?>
                                         <?php endif; ?>
                                     </tr>
                                 </thead>
@@ -128,11 +134,35 @@ require_once __DIR__ . '/components/sideNav.php';
                     <div id="studentInfo"></div>
 
                     <div class="row mb-3">
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label for="student_id" class="form-label">Select Student <span
                                     class="text-danger">*</span></label>
                             <select class="form-control" id="student_id" name="student_id" required>
                                 <option value="">Select Student</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="subject_id" class="form-label">Subject <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-control" id="subject_id" name="subject_id" required>
+                                <option value="">Select Subject</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="semester_id" class="form-label">Semester <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-control" id="semester_id" name="semester_id" required>
+                                <option value="">Select Semester</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="grading_period_id" class="form-label">Grading Period <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-control" id="grading_period_id" name="grading_period_id" required>
+                                <option value="">Select Grading Period</option>
                             </select>
                         </div>
                     </div>
@@ -160,10 +190,10 @@ require_once __DIR__ . '/components/sideNav.php';
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="final_grade" class="form-label">Final Grade <span
+                            <label for="period_grade" class="form-label">Period Grade <span
                                     class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="final_grade" name="final_grade"
-                                min="0" max="100" step="0.01" placeholder="0.00" readonly>
+                            <input type="text" class="form-control bg-light" id="period_grade" name="period_grade"
+                                placeholder="0.00" readonly style="cursor: not-allowed;">
                             <div class="form-text">Automatically calculated: Activity (40%) + Quiz (30%) + Exam (30%)
                             </div>
                         </div>
@@ -175,22 +205,21 @@ require_once __DIR__ . '/components/sideNav.php';
                         </div>
                         <div class="col-md-3">
                             <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                            <select class="form-control" id="status" name="status" required>
-                                <option value="">Select Status</option>
-                                <option value="pending">Pending</option>
-                                <option value="pass">Pass</option>
-                                <option value="fail">Fail</option>
-                            </select>
+                            <input type="text" class="form-control bg-light" id="status_display" readonly 
+                                placeholder="Pending" style="cursor: not-allowed;">
+                            <input type="hidden" id="status" name="status" value="pending">
+                            <div class="form-text">Automatically set based on grade</div>
                         </div>
                     </div>
 
                     <div class="alert alert-info">
                         <h6><i class="bi bi-info-circle"></i> Grade Calculation</h6>
                         <ul class="mb-0">
-                            <li><strong>Activity Score:</strong> 40% of final grade</li>
-                            <li><strong>Quiz Score:</strong> 30% of final grade</li>
-                            <li><strong>Exam Score:</strong> 30% of final grade</li>
-                            <li><strong>Final Grade:</strong> Automatically calculated based on weighted average</li>
+                            <li><strong>Activity Score:</strong> 40% of period grade</li>
+                            <li><strong>Quiz Score:</strong> 30% of period grade</li>
+                            <li><strong>Exam Score:</strong> 30% of period grade</li>
+                            <li><strong>Period Grade:</strong> Automatically calculated based on weighted average</li>
+                            <li><strong>Status:</strong> Automatically set (Pass ≥75, Fail <75, Pending = 0)</li>
                         </ul>
                     </div>
                 </form>
