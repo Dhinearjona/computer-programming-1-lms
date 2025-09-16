@@ -37,11 +37,18 @@ try {
                     throw new Exception('You do not have permission to add activities');
                 }
                 
+                // Handle file upload
+                $activityFile = null;
+                if (isset($_FILES['activity_file']) && $_FILES['activity_file']['error'] === UPLOAD_ERR_OK) {
+                    $activityFile = handleFileUpload($_FILES['activity_file']);
+                }
+                
                 $data = [
                     'subject_id' => (int)($_POST['subject_id'] ?? 0),
                     'grading_period_id' => (int)($_POST['grading_period_id'] ?? 0),
                     'title' => trim($_POST['title'] ?? ''),
                     'description' => trim($_POST['description'] ?? ''),
+                    'activity_file' => $activityFile,
                     'allow_from' => $_POST['allow_from'] ?? null,
                     'due_date' => $_POST['due_date'] ?? null,
                     'cutoff_date' => $_POST['cutoff_date'] ?? null,
@@ -65,11 +72,26 @@ try {
                 }
                 
                 $id = (int)($_POST['id'] ?? 0);
+                
+                // Get current activity to preserve existing file if no new file uploaded
+                $currentActivity = $activitiesModel->getById($id);
+                $activityFile = $currentActivity['activity_file'] ?? null;
+                
+                // Handle new file upload
+                if (isset($_FILES['activity_file']) && $_FILES['activity_file']['error'] === UPLOAD_ERR_OK) {
+                    // Delete old file if exists
+                    if ($activityFile && file_exists(__DIR__ . '/../../uploads/activities/teacher/' . $activityFile)) {
+                        unlink(__DIR__ . '/../../uploads/activities/teacher/' . $activityFile);
+                    }
+                    $activityFile = handleFileUpload($_FILES['activity_file']);
+                }
+                
                 $data = [
                     'subject_id' => (int)($_POST['subject_id'] ?? 0),
                     'grading_period_id' => (int)($_POST['grading_period_id'] ?? 0),
                     'title' => trim($_POST['title'] ?? ''),
                     'description' => trim($_POST['description'] ?? ''),
+                    'activity_file' => $activityFile,
                     'allow_from' => $_POST['allow_from'] ?? null,
                     'due_date' => $_POST['due_date'] ?? null,
                     'cutoff_date' => $_POST['cutoff_date'] ?? null,
@@ -162,5 +184,42 @@ try {
 } catch (Exception $e) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+}
+
+/**
+ * Handle file upload for activity files
+ */
+function handleFileUpload($file) {
+    // Create uploads directory if it doesn't exist
+    $uploadDir = __DIR__ . '/../../uploads/activities/teacher/';
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
+    // Validate file
+    $allowedTypes = ['c', 'cpp', 'h', 'txt', 'pdf', 'doc', 'docx'];
+    $maxSize = 10 * 1024 * 1024; // 10MB
+    
+    $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    $fileName = pathinfo($file['name'], PATHINFO_FILENAME);
+    
+    if (!in_array($fileExtension, $allowedTypes)) {
+        throw new Exception('Invalid file type. Allowed types: ' . implode(', ', $allowedTypes));
+    }
+    
+    if ($file['size'] > $maxSize) {
+        throw new Exception('File size too large. Maximum size: 10MB');
+    }
+    
+    // Generate unique filename
+    $uniqueFileName = $fileName . '_' . time() . '_' . uniqid() . '.' . $fileExtension;
+    $uploadPath = $uploadDir . $uniqueFileName;
+    
+    // Move uploaded file
+    if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
+        throw new Exception('Failed to upload file');
+    }
+    
+    return $uniqueFileName;
 }
 ?>

@@ -148,7 +148,7 @@ require_once __DIR__ . '/components/sideNav.php';
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="subject_id" class="form-label">
-                                <i class="bi bi-book"></i> Subject <span class="text-danger">*</span>
+                                Subject <span class="text-danger">*</span>
                             </label>
                             <select class="form-control" id="subject_id" name="subject_id" required>
                                 <option value="">Select Subject</option>
@@ -157,7 +157,7 @@ require_once __DIR__ . '/components/sideNav.php';
                         </div>
                         <div class="col-md-6">
                             <label for="grading_period_id" class="form-label">
-                                <i class="bi bi-calendar-check"></i> Grading Period <span class="text-danger">*</span>
+                                Grading Period <span class="text-danger">*</span>
                             </label>
                             <select class="form-control" id="grading_period_id" name="grading_period_id" required>
                                 <option value="">Select Grading Period</option>
@@ -168,7 +168,7 @@ require_once __DIR__ . '/components/sideNav.php';
 
                     <div class="mb-3">
                         <label for="title" class="form-label">
-                            <i class="bi bi-card-heading"></i> Activity Title <span class="text-danger">*</span>
+                            Activity Title <span class="text-danger">*</span>
                         </label>
                         <input type="text" class="form-control" id="title" name="title"
                             placeholder="Enter activity title..." required>
@@ -176,28 +176,48 @@ require_once __DIR__ . '/components/sideNav.php';
 
                     <div class="mb-3">
                         <label for="description" class="form-label">
-                            <i class="bi bi-chat-text"></i> Description <span class="text-danger">*</span>
+                            Description <span class="text-danger">*</span>
                         </label>
                         <textarea class="form-control" id="description" name="description" rows="4"
                             placeholder="Enter activity description..."></textarea>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="activity_file" class="form-label">
+                            Activity File
+                        </label>
+                        <input type="file" class="form-control" id="activity_file" name="activity_file" 
+                            accept=".c,.cpp,.h,.txt,.pdf,.doc,.docx" 
+                            onchange="previewFileName(this)">
+                        <div class="form-text">
+                            <small class="text-muted">
+                                Upload template files, instructions, or resources for this activity. 
+                                Supported formats: .c, .cpp, .h, .txt, .pdf, .doc, .docx
+                            </small>
+                        </div>
+                        <div id="filePreview" class="mt-2" style="display: none;">
+                            <div class="alert alert-info">
+                                <span id="fileName"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row mb-3">
                         <div class="col-md-4">
                             <label for="allow_from" class="form-label">
-                                <i class="bi bi-calendar-plus"></i> Allow From <span class="text-danger">*</span>
+                                Allow From <span class="text-danger">*</span>
                             </label>
                             <input type="date" class="form-control" id="allow_from" name="allow_from" required>
                         </div>
                         <div class="col-md-4">
                             <label for="due_date" class="form-label">
-                                <i class="bi bi-calendar-event"></i> Due Date <span class="text-danger">*</span>
+                                Due Date <span class="text-danger">*</span>
                             </label>
                             <input type="date" class="form-control" id="due_date" name="due_date" required>
                         </div>
                         <div class="col-md-4">
                             <label for="cutoff_date" class="form-label">
-                                <i class="bi bi-calendar-x"></i> Cutoff Date
+                                Cutoff Date
                             </label>
                             <input type="date" class="form-control" id="cutoff_date" name="cutoff_date">
                         </div>
@@ -206,13 +226,13 @@ require_once __DIR__ . '/components/sideNav.php';
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="reminder_date" class="form-label">
-                                <i class="bi bi-bell"></i> Reminder Date
+                                Reminder Date
                             </label>
                             <input type="date" class="form-control" id="reminder_date" name="reminder_date">
                         </div>
                         <div class="col-md-6">
                             <label for="deduction_percent" class="form-label">
-                                <i class="bi bi-percent"></i> Late Deduction (%)
+                                Late Deduction (%)
                             </label>
                             <input type="number" class="form-control" id="deduction_percent"
                                 name="deduction_percent" min="0" max="100" step="0.01"
@@ -222,7 +242,7 @@ require_once __DIR__ . '/components/sideNav.php';
 
                     <div class="mb-3">
                         <label for="status" class="form-label">
-                            <i class="bi bi-toggle-on"></i> Status
+                            Status
                         </label>
                         <select class="form-control" id="status" name="status">
                             <option value="active">Active</option>
@@ -234,7 +254,7 @@ require_once __DIR__ . '/components/sideNav.php';
                     </div>
 
                     <div class="alert alert-info">
-                        <h6><i class="bi bi-info-circle"></i> Activity Guidelines</h6>
+                        <h6>Activity Guidelines</h6>
                         <ul class="mb-0">
                             <li>Set clear due dates and cutoff dates</li>
                             <li>Provide detailed descriptions for students</li>
@@ -246,10 +266,10 @@ require_once __DIR__ . '/components/sideNav.php';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle"></i> Cancel
+                    Cancel
                 </button>
                 <button type="button" class="btn btn-primary" onclick="saveActivity()">
-                    <i class="bi bi-check-circle"></i> <span id="submitButtonText">Create Activity</span>
+                    <span id="submitButtonText">Create Activity</span>
                 </button>
             </div>
         </div>
@@ -293,6 +313,29 @@ require_once __DIR__ . '/components/sideNav.php';
     window.isTeacher = <?php echo Permission::isTeacher() ? 'true' : 'false'; ?>;
     window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
+
+    // Function to preview selected file name
+    function previewFileName(input) {
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            fileName.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+            filePreview.style.display = 'block';
+        } else {
+            filePreview.style.display = 'none';
+        }
+    }
+
+    // Function to clear file preview
+    function clearFilePreview() {
+        const fileInput = document.getElementById('activity_file');
+        const filePreview = document.getElementById('filePreview');
+        
+        fileInput.value = '';
+        filePreview.style.display = 'none';
+    }
 </script>
 
 <?php require_once __DIR__ . '/components/footer.php'; ?>

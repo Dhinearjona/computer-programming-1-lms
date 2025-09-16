@@ -214,6 +214,9 @@ function resetActivityForm() {
     document.getElementById('activityId').value = '';
     currentEditId = null;
     
+    // Clear file preview
+    clearFilePreview();
+    
     // Reset validation classes
     $('#activityForm .form-control').removeClass('is-valid is-invalid');
 }
@@ -230,8 +233,46 @@ function saveActivity() {
         return;
     }
     
+    // Validate file if uploaded
+    const fileInput = document.getElementById('activity_file');
+    if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const maxSize = 10 * 1024 * 1024; // 10MB limit
+        const allowedTypes = ['.c', '.cpp', '.h', '.txt', '.pdf', '.doc', '.docx'];
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+        
+        if (file.size > maxSize) {
+            Swal.fire({
+                icon: 'error',
+                title: 'File Too Large!',
+                text: 'File size must be less than 10MB.'
+            });
+            return;
+        }
+        
+        if (!allowedTypes.includes(fileExtension)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid File Type!',
+                text: 'Please upload a valid file type (.c, .cpp, .h, .txt, .pdf, .doc, .docx).'
+            });
+            return;
+        }
+    }
+    
     const action = formData.get('action');
     const url = 'app/API/apiActivities.php';
+    
+    // Show loading
+    Swal.fire({
+        title: 'Saving...',
+        text: 'Please wait while we save the activity.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
     
     fetch(url, {
         method: 'POST',
@@ -239,6 +280,7 @@ function saveActivity() {
     })
     .then(response => response.json())
     .then(data => {
+        Swal.close();
         if (data.success) {
             Swal.fire({
                 icon: 'success',
@@ -260,6 +302,7 @@ function saveActivity() {
         }
     })
     .catch(error => {
+        Swal.close();
         console.error('Error:', error);
         Swal.fire({
             icon: 'error',
@@ -384,6 +427,16 @@ function populateActivityForm(activity) {
     document.getElementById('reminder_date').value = activity.reminder_date || '';
     document.getElementById('deduction_percent').value = activity.deduction_percent || 0;
     document.getElementById('status').value = activity.status || 'active';
+    
+    // Handle activity file display
+    if (activity.activity_file) {
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        fileName.textContent = `Current file: ${activity.activity_file}`;
+        filePreview.style.display = 'block';
+    } else {
+        clearFilePreview();
+    }
 }
 
 /**
@@ -444,13 +497,13 @@ function viewActivity(id) {
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="bi bi-card-heading"></i> Title</label>
+                            <label class="form-label fw-bold">Title</label>
                             <p class="form-control-plaintext">${activity.title}</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="bi bi-toggle-on"></i> Status</label>
+                            <label class="form-label fw-bold">Status</label>
                             <p class="form-control-plaintext"><span class="${statusBadgeClass}">${statusText}</span></p>
                         </div>
                     </div>
@@ -459,41 +512,52 @@ function viewActivity(id) {
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="bi bi-book"></i> Subject</label>
+                            <label class="form-label fw-bold">Subject</label>
                             <p class="form-control-plaintext">${activity.subject_name || 'N/A'}</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="bi bi-calendar-check"></i> Grading Period</label>
+                            <label class="form-label fw-bold">Grading Period</label>
                             <p class="form-control-plaintext"><span class="${periodBadgeClass}">${activity.grading_period_name || 'N/A'}</span></p>
                         </div>
                     </div>
                 </div>
                 
                 <div class="mb-3">
-                    <label class="form-label fw-bold"><i class="bi bi-chat-text"></i> Description</label>
+                    <label class="form-label fw-bold">Description</label>
                     <div class="form-control-plaintext border rounded p-3 bg-light">
                         ${activity.description || 'No description provided'}
                     </div>
                 </div>
                 
+                ${activity.activity_file ? `
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Activity File</label>
+                    <div class="form-control-plaintext">
+                        <a href="uploads/activities/teacher/${activity.activity_file}" target="_blank" class="btn btn-outline-primary">
+                            Download ${activity.activity_file}
+                        </a>
+                    </div>
+                </div>
+                ` : ''}
+                
                 <div class="row">
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="bi bi-calendar-plus"></i> Allow From</label>
+                            <label class="form-label fw-bold">Allow From</label>
                             <p class="form-control-plaintext">${activity.allow_from ? new Date(activity.allow_from).toLocaleDateString() : 'N/A'}</p>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="bi bi-calendar-event"></i> Due Date</label>
+                            <label class="form-label fw-bold">Due Date</label>
                             <p class="form-control-plaintext">${activity.due_date ? new Date(activity.due_date).toLocaleDateString() : 'N/A'}</p>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="bi bi-calendar-x"></i> Cutoff Date</label>
+                            <label class="form-label fw-bold">Cutoff Date</label>
                             <p class="form-control-plaintext">${activity.cutoff_date ? new Date(activity.cutoff_date).toLocaleDateString() : 'N/A'}</p>
                         </div>
                     </div>
@@ -502,25 +566,25 @@ function viewActivity(id) {
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="bi bi-bell"></i> Reminder Date</label>
+                            <label class="form-label fw-bold">Reminder Date</label>
                             <p class="form-control-plaintext">${activity.reminder_date ? new Date(activity.reminder_date).toLocaleDateString() : 'N/A'}</p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label fw-bold"><i class="bi bi-percent"></i> Late Deduction</label>
+                            <label class="form-label fw-bold">Late Deduction</label>
                             <p class="form-control-plaintext">${activity.deduction_percent || 0}%</p>
                         </div>
                     </div>
                 </div>
                 
                 <div class="mb-3">
-                    <label class="form-label fw-bold"><i class="bi bi-clock"></i> Created</label>
+                    <label class="form-label fw-bold">Created</label>
                     <p class="form-control-plaintext">${new Date(activity.created_at).toLocaleDateString()}</p>
                 </div>
                 
                 <div class="alert alert-info">
-                    <h6><i class="bi bi-info-circle"></i> Activity Information</h6>
+                    <h6>Activity Information</h6>
                     <ul class="mb-0">
                         <li>Students can submit activities from the "Allow From" date</li>
                         <li>Late submissions after the due date will have a ${activity.deduction_percent || 0}% deduction</li>

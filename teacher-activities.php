@@ -139,7 +139,7 @@ require_once __DIR__ . '/components/sideNav.php';
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="gradeScore" class="form-label">
-                                    <i class="bi bi-star"></i> Score
+                                    Score
                                 </label>
                                 <input type="number" class="form-control" id="gradeScore" name="score" 
                                        min="0" max="100" step="0.01" required>
@@ -149,7 +149,7 @@ require_once __DIR__ . '/components/sideNav.php';
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="gradeMaxScore" class="form-label">
-                                    <i class="bi bi-award"></i> Max Score
+                                    Max Score
                                 </label>
                                 <input type="number" class="form-control" id="gradeMaxScore" name="max_score" 
                                        min="1" max="100" step="0.01" required>
@@ -159,14 +159,13 @@ require_once __DIR__ . '/components/sideNav.php';
                     
                     <div class="mb-3">
                         <label for="gradeComments" class="form-label">
-                            <i class="bi bi-chat-text"></i> Comments
+                            Comments
                         </label>
                         <textarea class="form-control" id="gradeComments" name="comments" rows="4" 
                                   placeholder="Add feedback and comments for the student..."></textarea>
                     </div>
                     
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
                         <strong>Note:</strong> Grades will be visible to students once submitted.
                     </div>
                 </form>
@@ -174,7 +173,7 @@ require_once __DIR__ . '/components/sideNav.php';
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success" onclick="submitGrade()">
-                    <i class="bi bi-check-circle"></i> Submit
+                    Submit
                 </button>
             </div>
         </div>

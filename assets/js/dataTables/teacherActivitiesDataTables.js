@@ -229,7 +229,7 @@ function populateSubmissionDetailsModal(submission) {
         <div class="card border-0 bg-light">
           <div class="card-body">
             <h6 class="card-title text-primary">
-              <i class="bi bi-person"></i> Student Information
+              Student Information
             </h6>
             <div class="mb-2">
               <strong>Student Name:</strong><br>
@@ -250,7 +250,7 @@ function populateSubmissionDetailsModal(submission) {
         <div class="card border-0 bg-light">
           <div class="card-body">
             <h6 class="card-title text-success">
-              <i class="bi bi-book"></i> Activity Information
+              Activity Information
             </h6>
             <div class="mb-2">
               <strong>Activity Title:</strong><br>
@@ -274,7 +274,7 @@ function populateSubmissionDetailsModal(submission) {
         <div class="card border-0 bg-light">
           <div class="card-body">
             <h6 class="card-title text-info">
-              <i class="bi bi-calendar"></i> Submission Details
+              Submission Details
             </h6>
             <div class="mb-2">
               <strong>Submission Date:</strong><br>
@@ -301,11 +301,15 @@ function populateSubmissionDetailsModal(submission) {
         <div class="card border-0 bg-light">
           <div class="card-body">
             <h6 class="card-title text-warning">
-              <i class="bi bi-file-text"></i> Submission Content
+              Submission Content
             </h6>
             <div class="mb-2">
               <strong>Submission Link:</strong><br>
               ${submission.submission_link ? `<a href="${submission.submission_link}" target="_blank" class="text-primary">${submission.submission_link}</a>` : 'N/A'}
+            </div>
+            <div class="mb-2">
+              <strong>Submission File:</strong><br>
+              ${submission.file_path ? `<a href="uploads/activities/student/${submission.file_path}" target="_blank" class="btn btn-outline-primary">Download File</a>` : 'N/A'}
             </div>
             <div class="mb-2">
               <strong>Submission Text:</strong><br>
@@ -324,7 +328,7 @@ function populateSubmissionDetailsModal(submission) {
         <div class="card border-0 bg-light">
           <div class="card-body">
             <h6 class="card-title text-secondary">
-              <i class="bi bi-chat-text"></i> Teacher Comments
+              Teacher Comments
             </h6>
             <div class="p-3 bg-white rounded border">
               ${submission.comments}
@@ -336,7 +340,7 @@ function populateSubmissionDetailsModal(submission) {
     ` : ''}
     
     <div class="alert alert-info mt-3">
-      <h6><i class="bi bi-info-circle"></i> Submission Information</h6>
+      <h6>Submission Information</h6>
       <ul class="mb-0">
         <li>This submission was made by the student for the specified activity</li>
         <li>You can grade this submission using the "Grade Submission" button</li>

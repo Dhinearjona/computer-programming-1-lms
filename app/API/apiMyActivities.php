@@ -74,10 +74,12 @@ try {
                             'title' => $activity['title'],
                             'subject_name' => $activity['subject_name'],
                             'description' => $activity['description'],
+                            'activity_file' => $activity['activity_file'],
                             'due_date' => $activity['due_date'],
                             'cutoff_date' => $activity['cutoff_date'],
                             'deduction_percent' => $activity['deduction_percent'],
                             'status' => $activity['status'],
+                            'grading_period_name' => $activity['grading_period_name'],
                             'submission_status' => $submission ? $submission['status'] : null,
                             'submission_link' => $submission ? $submission['submission_link'] : null,
                             'submission_text' => $submission ? $submission['submission_text'] : null,
@@ -164,10 +166,12 @@ try {
                             'title' => $activity['title'],
                             'subject_name' => $activity['subject_name'],
                             'description' => $activity['description'],
+                            'activity_file' => $activity['activity_file'],
                             'due_date' => $activity['due_date'],
                             'cutoff_date' => $activity['cutoff_date'],
                             'deduction_percent' => $activity['deduction_percent'],
                             'status' => $activity['status'],
+                            'grading_period_name' => $activity['grading_period_name'],
                             'submission_status' => $submission ? $submission['status'] : null,
                             'submission_link' => $submission ? $submission['submission_link'] : null,
                             'submission_text' => $submission ? $submission['submission_text'] : null,
@@ -231,13 +235,23 @@ try {
                     throw new Exception('Invalid activity ID');
                 }
                 
-                if (empty($submissionLink)) {
-                    throw new Exception('Submission link is required');
+                // Check if at least one submission method is provided
+                $hasLink = !empty($submissionLink);
+                $hasFile = isset($_FILES['submission_file']) && $_FILES['submission_file']['error'] === UPLOAD_ERR_OK;
+                
+                if (!$hasLink && !$hasFile) {
+                    throw new Exception('Please provide either a submission link or upload a file');
                 }
                 
-                // Validate URL
-                if (!filter_var($submissionLink, FILTER_VALIDATE_URL)) {
+                // Validate URL if provided
+                if ($hasLink && !filter_var($submissionLink, FILTER_VALIDATE_URL)) {
                     throw new Exception('Invalid submission link format');
+                }
+                
+                // Handle file upload if provided
+                $submissionFilePath = null;
+                if ($hasFile) {
+                    $submissionFilePath = handleStudentFileUpload($_FILES['submission_file']);
                 }
                 
                 // Check if activity exists and belongs to student's subject
@@ -266,17 +280,17 @@ try {
                     // Update existing submission
                     $updateStmt = $pdo->prepare("
                         UPDATE activity_submissions 
-                        SET submission_link = ?, submission_text = ?, status = 'submitted', updated_at = CURRENT_TIMESTAMP 
+                        SET submission_link = ?, submission_text = ?, file_path = ?, status = 'submitted', updated_at = CURRENT_TIMESTAMP 
                         WHERE id = ?
                     ");
-                    $updateStmt->execute([$submissionLink, $submissionText, $existing['id']]);
+                    $updateStmt->execute([$submissionLink, $submissionText, $submissionFilePath, $existing['id']]);
                 } else {
                     // Create new submission
                     $insertStmt = $pdo->prepare("
-                        INSERT INTO activity_submissions (activity_id, student_id, submission_link, submission_text, status) 
-                        VALUES (?, ?, ?, ?, 'submitted')
+                        INSERT INTO activity_submissions (activity_id, student_id, submission_link, submission_text, file_path, status) 
+                        VALUES (?, ?, ?, ?, ?, 'submitted')
                     ");
-                    $insertStmt->execute([$activityId, $studentId, $submissionLink, $submissionText]);
+                    $insertStmt->execute([$activityId, $studentId, $submissionLink, $submissionText, $submissionFilePath]);
                 }
                 
                 echo json_encode(['success' => true, 'message' => 'Activity submitted successfully']);
@@ -329,5 +343,46 @@ try {
 } catch (Exception $e) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+}
+
+/**
+ * Handle file upload for student submissions
+ */
+function handleStudentFileUpload($file) {
+    // Create uploads directory if it doesn't exist
+    $uploadDir = __DIR__ . '/../../uploads/activities/student/';
+    if (!file_exists($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+    
+    // Validate file
+    $allowedTypes = ['c', 'cpp', 'h', 'txt', 'pdf', 'doc', 'docx', 'zip', 'rar'];
+    $maxSize = 10 * 1024 * 1024; // 10MB
+    
+    $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    
+    if (!in_array($fileExtension, $allowedTypes)) {
+        throw new Exception('Invalid file type. Allowed types: ' . implode(', ', $allowedTypes));
+    }
+    
+    if ($file['size'] > $maxSize) {
+        throw new Exception('File size too large. Maximum size: 10MB');
+    }
+    
+    // Get student surname from session
+    $user = $_SESSION['user'];
+    $surname = strtoupper($user['last_name']);
+    
+    // Generate filename with SURNAME_DATETIME format
+    $currentDateTime = date('Y-m-d_H-i-s');
+    $uniqueFileName = $surname . '_' . $currentDateTime . '.' . $fileExtension;
+    $uploadPath = $uploadDir . $uniqueFileName;
+    
+    // Move uploaded file
+    if (!move_uploaded_file($file['tmp_name'], $uploadPath)) {
+        throw new Exception('Failed to upload file');
+    }
+    
+    return $uniqueFileName;
 }
 ?>

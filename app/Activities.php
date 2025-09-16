@@ -11,8 +11,8 @@ class Activities {
      */
     public function create($data) {
         $stmt = $this->pdo->prepare("
-            INSERT INTO activities (subject_id, grading_period_id, title, description, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO activities (subject_id, grading_period_id, title, description, activity_file, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
         $stmt->execute([
@@ -20,6 +20,7 @@ class Activities {
             $data['grading_period_id'],
             $data['title'],
             $data['description'],
+            $data['activity_file'] ?? null,
             $data['allow_from'],
             $data['due_date'],
             $data['cutoff_date'] ?? null,
@@ -99,7 +100,7 @@ class Activities {
     public function update($id, $data) {
         $stmt = $this->pdo->prepare("
             UPDATE activities 
-            SET subject_id = ?, grading_period_id = ?, title = ?, description = ?, allow_from = ?, due_date = ?, cutoff_date = ?, reminder_date = ?, deduction_percent = ?, status = ? 
+            SET subject_id = ?, grading_period_id = ?, title = ?, description = ?, activity_file = ?, allow_from = ?, due_date = ?, cutoff_date = ?, reminder_date = ?, deduction_percent = ?, status = ? 
             WHERE id = ?
         ");
         
@@ -108,6 +109,7 @@ class Activities {
             $data['grading_period_id'],
             $data['title'],
             $data['description'],
+            $data['activity_file'] ?? null,
             $data['allow_from'],
             $data['due_date'],
             $data['cutoff_date'] ?? null,

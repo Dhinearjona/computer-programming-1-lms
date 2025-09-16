@@ -147,6 +147,7 @@ CREATE TABLE activities (
   grading_period_id INT NOT NULL,
   title VARCHAR(150) NOT NULL,
   description TEXT,
+  activity_file VARCHAR(255),
   allow_from DATE,
   due_date DATE,
   cutoff_date DATE,
@@ -308,102 +309,102 @@ INSERT INTO grading_periods (semester_id, name, start_date, end_date, weight_per
 (1, 'midterm', '2025-10-01', '2025-11-15', 30.00, 'active'),
 (1, 'finals', '2025-11-16', '2025-12-15', 40.00, 'pending');
 
--- ENROLLMENTS (all students enrolled in Computer Programming 1)
-INSERT INTO enrollments (student_id, subject_id) VALUES
-(1, 1), (2, 1), (3, 1);
+-- -- ENROLLMENTS (all students enrolled in Computer Programming 1)
+-- INSERT INTO enrollments (student_id, subject_id) VALUES
+-- (1, 1), (2, 1), (3, 1);
 
--- LESSONS
-INSERT INTO lessons (subject_id, title, content) VALUES
-(1, 'Intro to C Programming', 'Variables, loops, and conditionals'),
-(1, 'Functions in C', 'Defining and calling functions'),
-(1, 'Arrays in C', 'Basics of arrays and indexing'),
-(1, 'Pointers in C', 'Understanding pointers and memory management'),
-(1, 'File Handling in C', 'Reading and writing files'),
-(1, 'Data Structures', 'Linked lists, stacks, and queues');
+-- -- LESSONS
+-- INSERT INTO lessons (subject_id, title, content) VALUES
+-- (1, 'Intro to C Programming', 'Variables, loops, and conditionals'),
+-- (1, 'Functions in C', 'Defining and calling functions'),
+-- (1, 'Arrays in C', 'Basics of arrays and indexing'),
+-- (1, 'Pointers in C', 'Understanding pointers and memory management'),
+-- (1, 'File Handling in C', 'Reading and writing files'),
+-- (1, 'Data Structures', 'Linked lists, stacks, and queues');
 
--- QUIZZES (Prelim Period)
-INSERT INTO quizzes (lesson_id, grading_period_id, title, max_score, time_limit_minutes) VALUES
-(1, 1, 'Prelim Quiz 1: Variables and Data Types', 100, 30),
-(2, 1, 'Prelim Quiz 2: Functions', 100, 20);
+-- -- QUIZZES (Prelim Period)
+-- INSERT INTO quizzes (lesson_id, grading_period_id, title, max_score, time_limit_minutes) VALUES
+-- (1, 1, 'Prelim Quiz 1: Variables and Data Types', 100, 30),
+-- (2, 1, 'Prelim Quiz 2: Functions', 100, 20);
 
--- QUIZZES (Midterm Period)
-INSERT INTO quizzes (lesson_id, grading_period_id, title, max_score, time_limit_minutes) VALUES
-(3, 2, 'Midterm Quiz 1: Arrays', 100, 25),
-(4, 2, 'Midterm Quiz 2: Pointers', 100, 30);
+-- -- QUIZZES (Midterm Period)
+-- INSERT INTO quizzes (lesson_id, grading_period_id, title, max_score, time_limit_minutes) VALUES
+-- (3, 2, 'Midterm Quiz 1: Arrays', 100, 25),
+-- (4, 2, 'Midterm Quiz 2: Pointers', 100, 30);
 
--- QUIZZES (Finals Period)
-INSERT INTO quizzes (lesson_id, grading_period_id, title, max_score, time_limit_minutes) VALUES
-(5, 3, 'Finals Quiz 1: File Handling', 100, 25),
-(6, 3, 'Finals Quiz 2: Data Structures', 100, 35);
+-- -- QUIZZES (Finals Period)
+-- INSERT INTO quizzes (lesson_id, grading_period_id, title, max_score, time_limit_minutes) VALUES
+-- (5, 3, 'Finals Quiz 1: File Handling', 100, 25),
+-- (6, 3, 'Finals Quiz 2: Data Structures', 100, 35);
 
--- QUIZ RESULTS
-INSERT INTO quiz_results (quiz_id, student_id, score) VALUES
-(1, 1, 60),
-(2, 2, 40),
-(3, 3, 85);
+-- -- QUIZ RESULTS
+-- INSERT INTO quiz_results (quiz_id, student_id, score) VALUES
+-- (1, 1, 60),
+-- (2, 2, 40),
+-- (3, 3, 85);
 
--- ACTIVITIES (Prelim Period)
-INSERT INTO activities (subject_id, grading_period_id, title, description, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) VALUES
-(1, 1, 'Prelim Activity 1: Hello World Program', 'Write your first C program that displays "Hello World"', '2025-08-05', '2025-08-12', '2025-08-14', '2025-08-10', 5.00, 'completed'),
-(1, 1, 'Prelim Activity 2: Variables and Input', 'Create a program that accepts user input and displays it', '2025-08-15', '2025-08-22', '2025-08-24', '2025-08-20', 5.00, 'completed'),
-(1, 1, 'Prelim Activity 3: Basic Functions', 'Write a function to calculate the area of a circle', '2025-08-25', '2025-09-02', '2025-09-04', '2025-08-30', 5.00, 'completed');
+-- -- ACTIVITIES (Prelim Period)
+-- INSERT INTO activities (subject_id, grading_period_id, title, description, activity_file, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) VALUES
+-- (1, 1, 'Prelim Activity 1: Hello World Program', 'Write your first C program that displays "Hello World"', 'hello_world_template.c', '2025-08-05', '2025-08-12', '2025-08-14', '2025-08-10', 5.00, 'completed'),
+-- (1, 1, 'Prelim Activity 2: Variables and Input', 'Create a program that accepts user input and displays it', 'variables_input_template.c', '2025-08-15', '2025-08-22', '2025-08-24', '2025-08-20', 5.00, 'completed'),
+-- (1, 1, 'Prelim Activity 3: Basic Functions', 'Write a function to calculate the area of a circle', 'circle_area_template.c', '2025-08-25', '2025-09-02', '2025-09-04', '2025-08-30', 5.00, 'completed');
 
--- ACTIVITIES (Midterm Period)
-INSERT INTO activities (subject_id, grading_period_id, title, description, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) VALUES
-(1, 2, 'Midterm Activity 1: Array Operations', 'Create a program that demonstrates array operations', '2025-10-05', '2025-10-12', '2025-10-14', '2025-10-10', 5.00, 'active'),
-(1, 2, 'Midterm Activity 2: Pointer Basics', 'Write a program using pointers to swap two numbers', '2025-10-15', '2025-10-22', '2025-10-24', '2025-10-20', 5.00, 'active'),
-(1, 2, 'Midterm Activity 3: String Manipulation', 'Create a program that manipulates strings using pointers', '2025-10-25', '2025-11-02', '2025-11-04', '2025-10-30', 5.00, 'pending');
+-- -- ACTIVITIES (Midterm Period)
+-- INSERT INTO activities (subject_id, grading_period_id, title, description, activity_file, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) VALUES
+-- (1, 2, 'Midterm Activity 1: Array Operations', 'Create a program that demonstrates array operations', 'array_operations_template.c', '2025-10-05', '2025-10-12', '2025-10-14', '2025-10-10', 5.00, 'active'),
+-- (1, 2, 'Midterm Activity 2: Pointer Basics', 'Write a program using pointers to swap two numbers', 'pointer_swap_template.c', '2025-10-15', '2025-10-22', '2025-10-24', '2025-10-20', 5.00, 'active'),
+-- (1, 2, 'Midterm Activity 3: String Manipulation', 'Create a program that manipulates strings using pointers', 'string_manipulation_template.c', '2025-10-25', '2025-11-02', '2025-11-04', '2025-10-30', 5.00, 'pending');
 
--- ACTIVITIES (Finals Period)
-INSERT INTO activities (subject_id, grading_period_id, title, description, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) VALUES
-(1, 3, 'Finals Activity 1: File I/O', 'Create a program that reads from and writes to files', '2025-11-20', '2025-11-27', '2025-11-29', '2025-11-25', 5.00, 'pending'),
-(1, 3, 'Finals Activity 2: Linked List Implementation', 'Implement a basic linked list with insert and delete operations', '2025-11-30', '2025-12-07', '2025-12-09', '2025-12-05', 5.00, 'pending'),
-(1, 3, 'Finals Activity 3: Final Project', 'Create a comprehensive C program demonstrating all concepts learned', '2025-12-01', '2025-12-12', '2025-12-14', '2025-12-10', 10.00, 'pending');
+-- -- ACTIVITIES (Finals Period)
+-- INSERT INTO activities (subject_id, grading_period_id, title, description, activity_file, allow_from, due_date, cutoff_date, reminder_date, deduction_percent, status) VALUES
+-- (1, 3, 'Finals Activity 1: File I/O', 'Create a program that reads from and writes to files', 'file_io_template.c', '2025-11-20', '2025-11-27', '2025-11-29', '2025-11-25', 5.00, 'pending'),
+-- (1, 3, 'Finals Activity 2: Linked List Implementation', 'Implement a basic linked list with insert and delete operations', 'linked_list_template.c', '2025-11-30', '2025-12-07', '2025-12-09', '2025-12-05', 5.00, 'pending'),
+-- (1, 3, 'Finals Activity 3: Final Project', 'Create a comprehensive C program demonstrating all concepts learned', 'final_project_template.c', '2025-12-01', '2025-12-12', '2025-12-14', '2025-12-10', 10.00, 'pending');
 
--- ACTIVITY SUBMISSIONS
-INSERT INTO activity_submissions (activity_id, student_id, file_path) VALUES
-(1, 1, '/submissions/juan_act1.c'),
-(2, 2, '/submissions/maria_act2.c'),
-(3, 3, '/submissions/pedro_act3.c');
+-- -- ACTIVITY SUBMISSIONS
+-- INSERT INTO activity_submissions (activity_id, student_id, file_path) VALUES
+-- (1, 1, '/submissions/juan_act1.c'),
+-- (2, 2, '/submissions/maria_act2.c'),
+-- (3, 3, '/submissions/pedro_act3.c');
 
--- ATTENDANCE
-INSERT INTO attendance (student_id, subject_id, attendance_date, status) VALUES
-(1, 1, '2025-09-01', 'present'),
-(2, 1, '2025-09-01', 'absent'),
-(3, 1, '2025-09-01', 'late');
+-- -- ATTENDANCE
+-- INSERT INTO attendance (student_id, subject_id, attendance_date, status) VALUES
+-- (1, 1, '2025-09-01', 'present'),
+-- (2, 1, '2025-09-01', 'absent'),
+-- (3, 1, '2025-09-01', 'late');
 
--- INTERVENTIONS
-INSERT INTO interventions (student_id, subject_id, notes, notify_teacher) VALUES
-(1, 1, 'Needs improvement in quizzes', 1),
-(2, 1, 'Absent multiple times', 1),
-(3, 1, 'Doing well, keep it up', 0);
+-- -- INTERVENTIONS
+-- INSERT INTO interventions (student_id, subject_id, notes, notify_teacher) VALUES
+-- (1, 1, 'Needs improvement in quizzes', 1),
+-- (2, 1, 'Absent multiple times', 1),
+-- (3, 1, 'Doing well, keep it up', 0);
 
--- ANNOUNCEMENTS
-INSERT INTO announcements (title, message, created_by) VALUES
-('Welcome to Computer Programming 1', 'Welcome to our Computer Programming 1 class! This semester we will be learning the fundamentals of C programming. Please make sure to attend all classes and submit assignments on time.', 4),
-('Assignment 1 Due Date', 'Reminder: Assignment 1 (Hello World Program) is due on September 5th. Late submissions will have a 5% deduction per day.', 4),
-('Quiz Schedule Update', 'The first quiz on Variables and Data Types has been scheduled for next week. Please review your notes and practice exercises.', 4);
+-- -- ANNOUNCEMENTS
+-- INSERT INTO announcements (title, message, created_by) VALUES
+-- ('Welcome to Computer Programming 1', 'Welcome to our Computer Programming 1 class! This semester we will be learning the fundamentals of C programming. Please make sure to attend all classes and submit assignments on time.', 4),
+-- ('Assignment 1 Due Date', 'Reminder: Assignment 1 (Hello World Program) is due on September 5th. Late submissions will have a 5% deduction per day.', 4),
+-- ('Quiz Schedule Update', 'The first quiz on Variables and Data Types has been scheduled for next week. Please review your notes and practice exercises.', 4);
 
--- SAMPLE GRADES (Prelim Period - Completed)
-INSERT INTO grades (student_id, subject_id, semester_id, grading_period_id, activity_score, quiz_score, exam_score, period_grade, status) VALUES
-(1, 1, 1, 1, 85.50, 78.00, 82.00, 81.50, 'pass'),
-(2, 1, 1, 1, 72.00, 65.00, 70.00, 69.00, 'fail'),
-(3, 1, 1, 1, 92.00, 88.00, 90.00, 90.00, 'pass');
+-- -- SAMPLE GRADES (Prelim Period - Completed)
+-- INSERT INTO grades (student_id, subject_id, semester_id, grading_period_id, activity_score, quiz_score, exam_score, period_grade, status) VALUES
+-- (1, 1, 1, 1, 85.50, 78.00, 82.00, 81.50, 'pass'),
+-- (2, 1, 1, 1, 72.00, 65.00, 70.00, 69.00, 'fail'),
+-- (3, 1, 1, 1, 92.00, 88.00, 90.00, 90.00, 'pass');
 
--- SAMPLE GRADES (Midterm Period - Active)
-INSERT INTO grades (student_id, subject_id, semester_id, grading_period_id, activity_score, quiz_score, exam_score, period_grade, status) VALUES
-(1, 1, 1, 2, 88.00, 82.00, 85.00, 85.00, 'pass'),
-(2, 1, 1, 2, 75.00, 70.00, 72.00, 72.33, 'pass'),
-(3, 1, 1, 2, 95.00, 92.00, 94.00, 93.67, 'pass');
+-- -- SAMPLE GRADES (Midterm Period - Active)
+-- INSERT INTO grades (student_id, subject_id, semester_id, grading_period_id, activity_score, quiz_score, exam_score, period_grade, status) VALUES
+-- (1, 1, 1, 2, 88.00, 82.00, 85.00, 85.00, 'pass'),
+-- (2, 1, 1, 2, 75.00, 70.00, 72.00, 72.33, 'pass'),
+-- (3, 1, 1, 2, 95.00, 92.00, 94.00, 93.67, 'pass');
 
--- SAMPLE GRADES (Finals Period - Pending)
-INSERT INTO grades (student_id, subject_id, semester_id, grading_period_id, activity_score, quiz_score, exam_score, period_grade, status) VALUES
-(1, 1, 1, 3, 0.00, 0.00, 0.00, 0.00, 'pending'),
-(2, 1, 1, 3, 0.00, 0.00, 0.00, 0.00, 'pending'),
-(3, 1, 1, 3, 0.00, 0.00, 0.00, 0.00, 'pending');
+-- -- SAMPLE GRADES (Finals Period - Pending)
+-- INSERT INTO grades (student_id, subject_id, semester_id, grading_period_id, activity_score, quiz_score, exam_score, period_grade, status) VALUES
+-- (1, 1, 1, 3, 0.00, 0.00, 0.00, 0.00, 'pending'),
+-- (2, 1, 1, 3, 0.00, 0.00, 0.00, 0.00, 'pending'),
+-- (3, 1, 1, 3, 0.00, 0.00, 0.00, 0.00, 'pending');
 
--- SAMPLE FINAL GRADES (Calculated from all periods)
-INSERT INTO final_grades (student_id, subject_id, semester_id, prelim_grade, midterm_grade, finals_grade, final_grade, status) VALUES
-(1, 1, 1, 81.50, 85.00, 0.00, 0.00, 'pending'),
-(2, 1, 1, 69.00, 72.33, 0.00, 0.00, 'pending'),
-(3, 1, 1, 90.00, 93.67, 0.00, 0.00, 'pending');
+-- -- SAMPLE FINAL GRADES (Calculated from all periods)
+-- INSERT INTO final_grades (student_id, subject_id, semester_id, prelim_grade, midterm_grade, finals_grade, final_grade, status) VALUES
+-- (1, 1, 1, 81.50, 85.00, 0.00, 0.00, 'pending'),
+-- (2, 1, 1, 69.00, 72.33, 0.00, 0.00, 'pending'),
+-- (3, 1, 1, 90.00, 93.67, 0.00, 0.00, 'pending');

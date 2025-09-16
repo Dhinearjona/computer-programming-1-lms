@@ -66,9 +66,8 @@ require_once __DIR__ . '/components/sideNav.php';
                                 <thead>
                                     <tr>
                                         <th>Title</th>
-                                        <th>Subject</th>
-                                        <th>Description</th>
                                         <th>Due Date</th>
+                                        <th>Activity File</th>
                                         <th>Grading Period</th>
                                         <th>Submission Status</th>
                                         <th>Grade</th>
@@ -115,44 +114,55 @@ require_once __DIR__ . '/components/sideNav.php';
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="submissionForm">
+                <form id="submissionForm" enctype="multipart/form-data">
                     <input type="hidden" id="submissionActivityId" name="activity_id">
                     <input type="hidden" id="submissionAction" name="action" value="submit_activity">
 
-                    <!-- Activity Info Display -->
+
+
                     <div class="mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h6 class="card-title" id="submissionActivityTitle">Activity Title</h6>
-                                <p class="card-text" id="submissionActivityDescription">Activity Description</p>
-                                <small class="text-muted">
-                                    <strong>Due Date:</strong> <span id="submissionDueDate"></span>
-                                </small>
+                        <label for="submissionLink" class="form-label">
+                            Submission Link
+                        </label>
+                        <input type="url" class="form-control" id="submissionLink" name="submission_link"
+                            placeholder="https://drive.google.com/file/d/...">
+                        <div class="form-text">
+                            <small class="text-muted">
+                                Provide a link to your work (Google Drive, GitHub, etc.)
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="submissionFile" class="form-label">
+                            File Submission
+                        </label>
+                        <input type="file" class="form-control" id="submissionFile" name="submission_file"
+                            accept=".c,.cpp,.h,.txt,.pdf,.doc,.docx,.zip,.rar" onchange="previewSubmissionFile(this)">
+                        <div class="form-text">
+                            <small class="text-muted">
+                                Upload your activity files. Supported formats: .c, .cpp, .h, .txt, .pdf, .doc, .docx,
+                                .zip, .rar
+                            </small>
+                        </div>
+                        <div id="fileSubmissionPreview" class="mt-2" style="display: none;">
+                            <div class="alert alert-info">
+                                <span id="submissionFileName"></span>
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="submissionLink" class="form-label">
-                            Submission Link <span class="text-danger">*</span>
-                        </label>
-                        <input type="url" class="form-control" id="submissionLink" name="submission_link"
-                            placeholder="https://drive.google.com/file/d/..." required>
-
-                    </div>
-
-                    <div class="mb-3">
                         <label for="submissionText" class="form-label">
-                            Additional Notes (Optional)
+                            Additional Notes
                         </label>
                         <textarea class="form-control" id="submissionText" name="submission_text" rows="3"
                             placeholder="Add any additional notes or comments about your submission..."></textarea>
                     </div>
 
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
                         <strong>Note:</strong> You can submit and update your work until the due date.
-                        Make sure your link is accessible and contains your completed work.
+                        You can provide either a submission link, upload files, or both.
                     </div>
                 </form>
             </div>
@@ -176,6 +186,29 @@ require_once __DIR__ . '/components/sideNav.php';
     window.canViewOwnActivities = <?php echo Permission::canViewOwnActivities() ? 'true' : 'false'; ?>;
     window.canSubmitActivities = <?php echo Permission::canSubmitActivities() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
+
+    // Function to preview submission file
+    function previewSubmissionFile(input) {
+        const filePreview = document.getElementById('fileSubmissionPreview');
+        const fileName = document.getElementById('submissionFileName');
+
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            fileName.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+            filePreview.style.display = 'block';
+        } else {
+            filePreview.style.display = 'none';
+        }
+    }
+
+    // Function to clear submission file preview
+    function clearSubmissionFilePreview() {
+        const fileInput = document.getElementById('submissionFile');
+        const filePreview = document.getElementById('fileSubmissionPreview');
+
+        fileInput.value = '';
+        filePreview.style.display = 'none';
+    }
 </script>
 
 <?php require_once __DIR__ . '/components/footer.php'; ?>

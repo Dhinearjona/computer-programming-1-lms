@@ -11,6 +11,10 @@ $(document).ready(function() {
     // Reset modal title when closed
     $('#submissionModal').on('hidden.bs.modal', function () {
         document.getElementById('submissionModalTitle').textContent = 'Submit Activity';
+        // Clear file preview
+        if (typeof clearSubmissionFilePreview === 'function') {
+            clearSubmissionFilePreview();
+        }
     });
 });
 
@@ -44,20 +48,9 @@ function initializeMyActivitiesTable() {
         },
         "columns": [
             { "data": "title", "width": "20%" },
-            { "data": "subject_name", "width": "15%" },
-            { 
-                "data": "description", 
-                "width": "20%",
-                "render": function(data, type, row) {
-                    if (data && data.length > 60) {
-                        return data.substring(0, 60) + '...';
-                    }
-                    return data || '';
-                }
-            },
             { 
                 "data": "due_date", 
-                "width": "12%",
+                "width": "15%",
                 "render": function(data, type, row) {
                     if (data) {
                         const date = new Date(data);
@@ -67,11 +60,25 @@ function initializeMyActivitiesTable() {
                 }
             },
             { 
-                "data": "grading_period_name", 
-                "width": "10%",
+                "data": "activity_file", 
+                "width": "15%",
                 "render": function(data, type, row) {
                     if (data) {
-                        return '<span class="badge bg-info">' + data + '</span>';
+                        return `<a href="uploads/activities/teacher/${data}" target="_blank" class="btn btn-outline-primary">Download</a>`;
+                    }
+                    return '<span class="text-muted">No file</span>';
+                }
+            },
+            { 
+                "data": "grading_period_name", 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    if (data) {
+                        let badgeClass = 'badge bg-primary';
+                        if (data.toLowerCase().includes('prelim')) badgeClass = 'badge bg-info';
+                        else if (data.toLowerCase().includes('midterm')) badgeClass = 'badge bg-warning';
+                        else if (data.toLowerCase().includes('finals')) badgeClass = 'badge bg-danger';
+                        return '<span class="' + badgeClass + '">' + data + '</span>';
                     }
                     return '';
                 }
@@ -79,21 +86,21 @@ function initializeMyActivitiesTable() {
             { 
                 "data": "submission_status", 
                 "orderable": false, 
-                "width": "10%",
+                "width": "15%",
                 "render": function(data, type, row) {
                     if (row.submission_status === 'submitted') {
-                        return '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Submitted</span>';
+                        return '<span class="badge bg-success">Submitted</span>';
                     } else if (row.submission_status === 'unsubmitted') {
-                        return '<span class="badge bg-warning"><i class="bi bi-clock"></i> Unsubmitted</span>';
+                        return '<span class="badge bg-warning">Unsubmitted</span>';
                     } else {
-                        return '<span class="badge bg-secondary"><i class="bi bi-dash-circle"></i> Not Submitted</span>';
+                        return '<span class="badge bg-secondary">Not Submitted</span>';
                     }
                 }
             },
             { 
                 "data": "grade", 
                 "orderable": false, 
-                "width": "8%",
+                "width": "10%",
                 "render": function(data, type, row) {
                     if (row.grade && row.grade > 0) {
                         return '<span class="badge bg-primary">' + row.grade + '</span>';
@@ -105,7 +112,7 @@ function initializeMyActivitiesTable() {
             { 
                 "data": "actions", 
                 "orderable": false, 
-                "width": "15%",
+                "width": "10%",
                 "render": function(data, type, row) {
                     let actions = '<div class="btn-group gap-1" role="group">';
                     
@@ -141,7 +148,7 @@ function initializeMyActivitiesTable() {
                 }
             }
         ],
-        "order": [[3, "asc"]], // Sort by due date
+        "order": [[1, "asc"]], // Sort by due date
         "pageLength": 10,
         "responsive": true,
         "language": {
@@ -224,38 +231,50 @@ function viewActivityDetails(id) {
             document.getElementById('activityDetailsContent').innerHTML = `
                 <div class="row">
                     <div class="col-md-8">
-                        <h6><i class="bi bi-book"></i> Subject</h6>
+                        <h6>Subject</h6>
                         <p class="mb-3">${activity.subject_name}</p>
                         
-                        <h6><i class="bi bi-file-text"></i> Description</h6>
+                        <h6>Description</h6>
                         <div class="mb-3 p-3 bg-light rounded">
                             ${activity.description ? activity.description.replace(/\n/g, '<br>') : 'No description provided'}
                         </div>
                         
+                        ${activity.activity_file ? `
+                        <h6>Activity File</h6>
+                        <p class="mb-3">
+                            <a href="uploads/activities/teacher/${activity.activity_file}" target="_blank" class="btn btn-outline-primary">
+                                Download ${activity.activity_file}
+                            </a>
+                        </p>
+                        ` : ''}
+                        
                         ${submissionInfo}
                     </div>
                     <div class="col-md-4">
-                        <h6><i class="bi bi-calendar-event"></i> Due Date</h6>
+                        <h6>Due Date</h6>
                         <p class="mb-3">${dueDate.toLocaleDateString()} at ${dueDate.toLocaleTimeString()}</p>
                         
-                        <h6><i class="bi bi-calendar-x"></i> Cutoff Date</h6>
+                        <h6>Cutoff Date</h6>
                         <p class="mb-3">${cutoffDate.toLocaleDateString()} at ${cutoffDate.toLocaleTimeString()}</p>
                         
-                        <h6><i class="bi bi-clock"></i> Time Status</h6>
+                        <h6>Grading Period</h6>
+                        <p class="mb-3">${activity.grading_period_name}</p>
+                        
+                        <h6>Time Status</h6>
                         <p class="mb-3 text-${daysRemaining >= 0 ? 'success' : 'danger'}">${daysText}</p>
                         
-                        <h6><i class="bi bi-info-circle"></i> Status</h6>
+                        <h6>Status</h6>
                         <p class="mb-3">${statusBadge}</p>
                         
                         ${activity.deduction_percent > 0 ? `
-                            <h6><i class="bi bi-exclamation-triangle"></i> Late Penalty</h6>
+                            <h6>Late Penalty</h6>
                             <p class="mb-3 text-warning">${activity.deduction_percent}% deduction per day</p>
                         ` : ''}
                     </div>
                 </div>
                 
                 <div class="alert alert-info mt-3">
-                    <h6><i class="bi bi-lightbulb"></i> Important Notes</h6>
+                    <h6>Important Notes</h6>
                     <ul class="mb-0">
                         <li>Submit your activity before the due date to avoid penalties</li>
                         <li>Late submissions will have a ${activity.deduction_percent}% deduction per day</li>
@@ -311,62 +330,46 @@ function openSubmissionModal(activityId) {
  * Open submission modal for specific activity
  */
 function submitActivity(activityId) {
-    // Get activity details first
-    fetch(`app/API/apiMyActivities.php?action=get_activity&id=${activityId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Populate modal with activity details
-                document.getElementById('submissionActivityId').value = activityId;
-                document.getElementById('submissionActivityTitle').textContent = data.data.title;
-                document.getElementById('submissionActivityDescription').textContent = data.data.description || 'No description provided';
-                document.getElementById('submissionDueDate').textContent = new Date(data.data.due_date).toLocaleDateString();
-                
-                // Clear form
-                document.getElementById('submissionLink').value = '';
-                document.getElementById('submissionText').value = '';
-                
-                // Show modal
-                $('#submissionModal').modal('show');
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: data.message
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: 'Failed to load activity details.'
-            });
-        });
+    // Set activity ID and clear form
+    document.getElementById('submissionActivityId').value = activityId;
+    document.getElementById('submissionLink').value = '';
+    document.getElementById('submissionText').value = '';
+    document.getElementById('submissionAction').value = 'submit_activity';
+    document.getElementById('submissionModalTitle').textContent = 'Submit Activity';
+    
+    // Clear file input and preview
+    if (typeof clearSubmissionFilePreview === 'function') {
+        clearSubmissionFilePreview();
+    }
+    
+    // Show modal
+    $('#submissionModal').modal('show');
 }
 
 /**
  * Update existing submission
  */
 function updateSubmission(activityId) {
-    // Get activity details and current submission
+    // Get current submission data
     fetch(`app/API/apiMyActivities.php?action=get_activity&id=${activityId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Populate modal with activity details
+                // Set activity ID
                 document.getElementById('submissionActivityId').value = activityId;
-                document.getElementById('submissionActivityTitle').textContent = data.data.title;
-                document.getElementById('submissionActivityDescription').textContent = data.data.description || 'No description provided';
-                document.getElementById('submissionDueDate').textContent = new Date(data.data.due_date).toLocaleDateString();
                 
                 // Pre-fill with existing submission data
                 document.getElementById('submissionLink').value = data.data.submission_link || '';
                 document.getElementById('submissionText').value = data.data.submission_text || '';
+                document.getElementById('submissionAction').value = 'submit_activity';
                 
                 // Update modal title
                 document.getElementById('submissionModalTitle').textContent = 'Update Submission';
+                
+                // Clear file input and preview
+                if (typeof clearSubmissionFilePreview === 'function') {
+                    clearSubmissionFilePreview();
+                }
                 
                 // Show modal
                 $('#submissionModal').modal('show');
@@ -395,28 +398,68 @@ function submitActivityForm() {
     const form = document.getElementById('submissionForm');
     const formData = new FormData(form);
     
-    // Validate required fields
+    // Validate that at least one submission method is provided
     const submissionLink = document.getElementById('submissionLink').value.trim();
-    if (!submissionLink) {
+    const submissionFile = document.getElementById('submissionFile').files[0];
+    
+    if (!submissionLink && !submissionFile) {
         Swal.fire({
             icon: 'error',
             title: 'Error!',
-            text: 'Please provide a submission link.'
+            text: 'Please provide either a submission link or upload a file.'
         });
         return;
     }
     
-    // Validate URL format
-    try {
-        new URL(submissionLink);
-    } catch (e) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error!',
-            text: 'Please provide a valid URL.'
-        });
-        return;
+    // Validate URL format if provided
+    if (submissionLink) {
+        try {
+            new URL(submissionLink);
+        } catch (e) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Please provide a valid URL.'
+            });
+            return;
+        }
     }
+    
+    // Validate file if uploaded
+    if (submissionFile) {
+        const maxSize = 10 * 1024 * 1024; // 10MB limit
+        const allowedTypes = ['.c', '.cpp', '.h', '.txt', '.pdf', '.doc', '.docx', '.zip', '.rar'];
+        const fileExtension = '.' + submissionFile.name.split('.').pop().toLowerCase();
+        
+        if (submissionFile.size > maxSize) {
+            Swal.fire({
+                icon: 'error',
+                title: 'File Too Large!',
+                text: 'File size must be less than 10MB.'
+            });
+            return;
+        }
+        
+        if (!allowedTypes.includes(fileExtension)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid File Type!',
+                text: 'Please upload a valid file type (.c, .cpp, .h, .txt, .pdf, .doc, .docx, .zip, .rar).'
+            });
+            return;
+        }
+    }
+    
+    // Show loading
+    Swal.fire({
+        title: 'Submitting...',
+        text: 'Please wait while we submit your activity.',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+            Swal.showLoading();
+        }
+    });
     
     fetch('app/API/apiMyActivities.php', {
         method: 'POST',
@@ -424,6 +467,7 @@ function submitActivityForm() {
     })
     .then(response => response.json())
     .then(data => {
+        Swal.close();
         if (data.success) {
             Swal.fire({
                 icon: 'success',
@@ -444,6 +488,7 @@ function submitActivityForm() {
         }
     })
     .catch(error => {
+        Swal.close();
         console.error('Error:', error);
         Swal.fire({
             icon: 'error',
