@@ -11,7 +11,7 @@ header('Expires: 0');
 // Check if logged in - updated to work with login.php session structure
 if (!isset($_SESSION['user']) || empty($_SESSION['user'])) {
     header('Location: login.php');
-    exit();
+    exit(); 
 }
 
 // Get user information from session

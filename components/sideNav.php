@@ -18,6 +18,8 @@ $navItems = [
     'my-activities-midterm' => 'collapsed',
     'my-activities-finals' => 'collapsed',
     'quizzes' => 'collapsed',
+    'quizzes-submissions' => 'collapsed',
+    'exam-submissions' => 'collapsed',
     'myQuizzes' => 'collapsed',
     'my-quizzes-prelim' => 'collapsed',
     'my-quizzes-midterm' => 'collapsed',
@@ -110,8 +112,20 @@ if (array_key_exists($key, $navItems)) {
         </li>
 
         <li class="nav-item">
+            <a class="nav-link <?= $navItems['quizzes-submissions'] ?>" href="quizzes-submissions.php">
+                <i class="bi bi-clipboard-data"></i><span>Quiz Submissions</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a class="nav-link <?= $navItems['exam'] ?>" href="exam.php">
                 <i class="bi bi-file-earmark-check"></i><span>Exams</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link <?= $navItems['exam-submissions'] ?>" href="exam-submissions.php">
+                <i class="bi bi-clipboard-check"></i><span>Exam Submissions</span>
             </a>
         </li>
 
@@ -171,8 +185,20 @@ if (array_key_exists($key, $navItems)) {
         </li>
 
         <li class="nav-item">
+            <a class="nav-link <?= $navItems['quizzes-submissions'] ?>" href="quizzes-submissions.php">
+                <i class="bi bi-clipboard-data"></i><span>Quiz Submissions</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a class="nav-link <?= $navItems['exam'] ?>" href="exam.php">
                 <i class="bi bi-file-earmark-check"></i><span>Exams</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link <?= $navItems['exam-submissions'] ?>" href="exam-submissions.php">
+                <i class="bi bi-clipboard-check"></i><span>Exam Submissions</span>
             </a>
         </li>
 

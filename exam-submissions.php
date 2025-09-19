@@ -22,8 +22,8 @@ $username = $user['first_name'] . ' ' . $user['last_name'];
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
 
-// Check if user has permission to manage activities
-if (!Permission::canManageActivities()) {
+// Check if user has permission to manage quizzes (exams use same permission)
+if (!Permission::canManageQuizzes()) {
     header('Location: index.php');
     exit();
 }
@@ -38,15 +38,15 @@ require_once __DIR__ . '/components/sideNav.php';
     <div class="pagetitle">
         <h1>
             <?php if (Permission::isAdmin()): ?>
-            Student Activity Submissions Management
+            Student Exam Submissions Management
             <?php elseif (Permission::isTeacher()): ?>
-            My Students' Activity Submissions
+            My Students' Exam Submissions
             <?php endif; ?>
         </h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                <li class="breadcrumb-item active">Student Submissions</li>
+                <li class="breadcrumb-item active">Exam Submissions</li>
             </ol>
         </nav>
     </div>
@@ -59,9 +59,9 @@ require_once __DIR__ . '/components/sideNav.php';
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title">
                                 <?php if (Permission::isAdmin()): ?>
-                                All Student Activity Submissions
+                                All Student Exam Submissions
                                 <?php elseif (Permission::isTeacher()): ?>
-                                My Students' Activity Submissions
+                                My Students' Exam Submissions
                                 <?php endif; ?>
                             </h5>
                             <div class="d-flex gap-2 align-items-center">
@@ -71,8 +71,13 @@ require_once __DIR__ . '/components/sideNav.php';
                                     <option value="midterm">Midterm</option>
                                     <option value="finals">Finals</option>
                                 </select>
-                                <?php if (Permission::canManageActivities()): ?>
-                                <button type="button" class="btn btn-outline-success" onclick="exportSubmissionsData()"
+                                <select class="form-select" id="statusFilter" style="width: auto;" onchange="filterByStatus()">
+                                    <option value="">All Status</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="in_progress">In Progress</option>
+                                </select>
+                                <?php if (Permission::canManageQuizzes()): ?>
+                                <button type="button" class="btn btn-outline-success" onclick="exportExamSubmissionsData()"
                                     title="Export Data">
                                     <i class="bi bi-download"></i>
                                 </button>
@@ -82,15 +87,16 @@ require_once __DIR__ . '/components/sideNav.php';
 
                         <!-- DataTable -->
                         <div class="table-responsive">
-                            <table class="table table-striped" id="submissionsTable">
+                            <table class="table table-striped" id="examSubmissionsTable">
                                 <thead>
                                     <tr>
                                         <th>Student Name</th>
-                                        <th>Activity Title</th>
+                                        <th>Exam Title</th>
                                         <th>Subject</th>
                                         <th>Grading Period</th>
+                                        <th>Score</th>
                                         <th>Status</th>
-                                        <th>Grade</th>
+                                        <th>Submitted At</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -105,78 +111,107 @@ require_once __DIR__ . '/components/sideNav.php';
     </section>
 </main>
 
-<!-- Submission Details Modal -->
-<div class="modal fade" id="submissionDetailsModal" tabindex="-1">
+<!-- Exam Submission Details Modal -->
+<div class="modal fade" id="examSubmissionDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="submissionDetailsTitle">Submission Details</h5>
+                <h5 class="modal-title" id="examSubmissionDetailsTitle">Exam Submission Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="submissionDetailsContent">
-                    <!-- Submission details will be loaded here -->
+                <div id="examSubmissionDetailsContent">
+                    <!-- Exam submission details will be loaded here -->
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="printExamSubmissionBtn" onclick="printExamSubmission()">
+                    <i class="bi bi-printer"></i> Print
+                </button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Grade Submission Modal -->
-<div class="modal fade" id="gradeSubmissionModal" tabindex="-1">
+<!-- Grade Exam Submission Modal -->
+<div class="modal fade" id="gradeExamSubmissionModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="gradeSubmissionTitle">Grade Submission</h5>
+                <h5 class="modal-title" id="gradeExamSubmissionTitle">Review Exam Submission</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="gradeSubmissionForm">
-                    <input type="hidden" id="gradeSubmissionId" name="submission_id">
-                    <input type="hidden" id="gradeAction" name="action" value="grade_submission">
+                <form id="gradeExamSubmissionForm">
+                    <input type="hidden" id="gradeExamSubmissionId" name="submission_id">
+                    <input type="hidden" id="gradeExamAction" name="action" value="grade_exam_submission">
 
-                    <div class="row">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="examScore" class="form-label">
+                                    Score Achieved
+                                </label>
+                                <input type="number" class="form-control" id="examScore" name="score" min="0"
+                                    step="0.01" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="examMaxScore" class="form-label">
+                                    Max Score
+                                </label>
+                                <input type="number" class="form-control" id="examMaxScore" name="max_score"
+                                    readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="examPercentage" class="form-label">
+                                    Percentage
+                                </label>
+                                <input type="text" class="form-control" id="examPercentage" readonly>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="gradeScore" class="form-label">
-                                    Score
+                                <label for="examTimeSpent" class="form-label">
+                                    Time Spent
                                 </label>
-                                <input type="number" class="form-control" id="gradeScore" name="score" min="0"
-                                    max="100" step="0.01" required>
-                                <div class="form-text">Enter score out of 100</div>
+                                <input type="text" class="form-control" id="examTimeSpent" readonly>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="gradeMaxScore" class="form-label">
-                                    Max Score
+                                <label for="examStartedAt" class="form-label">
+                                    Started At
                                 </label>
-                                <input type="number" class="form-control" id="gradeMaxScore" name="max_score"
-                                    min="1" max="100" step="0.01" required>
+                                <input type="text" class="form-control" id="examStartedAt" readonly>
                             </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label for="gradeComments" class="form-label">
-                            Comments
+                        <label for="examTeacherComments" class="form-label">
+                            Teacher Comments
                         </label>
-                        <textarea class="form-control" id="gradeComments" name="comments" rows="4"
+                        <textarea class="form-control" id="examTeacherComments" name="teacher_comments" rows="4"
                             placeholder="Add feedback and comments for the student..."></textarea>
                     </div>
 
                     <div class="alert alert-info">
-                        <strong>Note:</strong> Grades will be visible to students once submitted.
+                        <strong>Note:</strong> Comments will be visible to students. Exam scores are automatically calculated.
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="submitGrade()">
-                    Submit
+                <button type="button" class="btn btn-success" onclick="submitExamGrade()">
+                    Save Comments
                 </button>
             </div>
         </div>
@@ -205,13 +240,13 @@ require_once __DIR__ . '/components/sideNav.php';
 <!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- Teacher Activities DataTables JS -->
-<script src="assets/js/dataTables/teacherActivitiesDataTables.js"></script>
+<!-- Exam Submissions DataTables JS -->
+<script src="assets/js/dataTables/examSubmissionsDataTables.js"></script>
 
 <!-- Pass permissions to JavaScript -->
 <script>
     window.currentUserRole = '<?php echo $userRole; ?>';
-    window.canManageActivities = <?php echo Permission::canManageActivities() ? 'true' : 'false'; ?>;
+    window.canManageQuizzes = <?php echo Permission::canManageQuizzes() ? 'true' : 'false'; ?>;
     window.isAdmin = <?php echo Permission::isAdmin() ? 'true' : 'false'; ?>;
     window.isTeacher = <?php echo Permission::isTeacher() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;

@@ -51,21 +51,49 @@ function initializeSubmissionsTable() {
     "columns": [
         { 
             "data": "student_name", 
-            "width": "25%",
+            "width": "20%",
             "render": function(data, type, row) {
                 return `<strong>${data}</strong>`;
             }
         },
         { 
-            "data": "subject_name", 
+            "data": "activity_title", 
             "width": "20%",
+            "render": function(data, type, row) {
+                return data || 'N/A';
+            }
+        },
+        { 
+            "data": "subject_name", 
+            "width": "15%",
             "render": function(data, type, row) {
                 return data ? `<span class="badge bg-primary">${data}</span>` : 'N/A';
             }
         },
         { 
+            "data": "grading_period_name", 
+            "width": "12%",
+            "render": function(data, type, row) {
+                let badgeClass = '';
+                switch(data?.toLowerCase()) {
+                    case 'prelim':
+                        badgeClass = 'badge bg-warning';
+                        break;
+                    case 'midterm':
+                        badgeClass = 'badge bg-info';
+                        break;
+                    case 'finals':
+                        badgeClass = 'badge bg-success';
+                        break;
+                    default:
+                        badgeClass = 'badge bg-secondary';
+                }
+                return data ? `<span class="${badgeClass}">${data}</span>` : 'N/A';
+            }
+        },
+        { 
             "data": "status", 
-            "width": "15%",
+            "width": "10%",
             "render": function(data, type, row) {
                 let badgeClass = '';
                 let badgeText = '';
@@ -89,7 +117,7 @@ function initializeSubmissionsTable() {
         },
         { 
             "data": "grade", 
-            "width": "15%",
+            "width": "10%",
             "render": function(data, type, row) {
                 if (data && data !== 'Not Graded') {
                     return `<span class="badge bg-info">${data}</span>`;
@@ -100,7 +128,7 @@ function initializeSubmissionsTable() {
         { 
             "data": "actions", 
             "orderable": false,
-            "width": "25%",
+            "width": "13%",
             "render": function(data, type, row) {
                 let actions = '<div class="btn-group gap-1" role="group">';
                 

@@ -31,6 +31,8 @@
 <script src="assets/js/dataTables/teachersDataTables.js"></script>
 <script src="assets/js/dataTables/lessonsDataTables.js"></script>
 <script src="assets/js/dataTables/myActivitiesDataTables.js"></script>
+<script src="assets/js/dataTables/quizSubmissionsDataTables.js"></script>
+<script src="assets/js/dataTables/examSubmissionsDataTables.js"></script>
 <script src="assets/js/dataTables/myQuizzesDataTables.js"></script>
 <script src="assets/js/dataTables/gradingPeriodsDataTables.js"></script>
 <script src="assets/js/dataTables/semestersDataTables.js"></script>
