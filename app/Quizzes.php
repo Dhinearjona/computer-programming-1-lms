@@ -11,16 +11,21 @@ class Quizzes {
      */
     public function create($data) {
         $stmt = $this->pdo->prepare("
-            INSERT INTO quizzes (lesson_id, grading_period_id, title, max_score, time_limit_minutes) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO quizzes (lesson_id, grading_period_id, title, description, max_score, time_limit_minutes, attempts_allowed, display_mode, open_at, close_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
         $stmt->execute([
             $data['lesson_id'],
             $data['grading_period_id'],
             $data['title'],
+            $data['description'] ?? '',
             $data['max_score'],
-            $data['time_limit_minutes'] ?? null
+            $data['time_limit_minutes'] ?? null,
+            $data['attempts_allowed'] ?? 1,
+            $data['display_mode'] ?? 'all',
+            $data['open_at'],
+            $data['close_at']
         ]);
         
         return $this->pdo->lastInsertId();
@@ -119,7 +124,7 @@ class Quizzes {
     public function update($id, $data) {
         $stmt = $this->pdo->prepare("
             UPDATE quizzes 
-            SET lesson_id = ?, grading_period_id = ?, title = ?, max_score = ?, time_limit_minutes = ? 
+            SET lesson_id = ?, grading_period_id = ?, title = ?, description = ?, max_score = ?, time_limit_minutes = ?, attempts_allowed = ?, display_mode = ?, open_at = ?, close_at = ?
             WHERE id = ?
         ");
         
@@ -127,8 +132,13 @@ class Quizzes {
             $data['lesson_id'],
             $data['grading_period_id'],
             $data['title'],
+            $data['description'] ?? '',
             $data['max_score'],
             $data['time_limit_minutes'] ?? null,
+            $data['attempts_allowed'] ?? 1,
+            $data['display_mode'] ?? 'all',
+            $data['open_at'],
+            $data['close_at'],
             $id
         ]);
         

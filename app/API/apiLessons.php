@@ -1,201 +1,58 @@
 <?php
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE');
-header('Access-Control-Allow-Headers: Content-Type');
-
-require_once '../Lessons.php';
-require_once '../Permissions.php';
-
-// Check if user is logged in
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-if (!isset($_SESSION['user'])) {
+
+// Check if logged in
+if (!isset($_SESSION['user']) || empty($_SESSION['user'])) {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
-    exit;
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit();
 }
 
-// Check permissions based on action
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
-$readOnlyActions = ['datatable', 'get_subjects', 'get_lessons_by_subject', 'statistics', 'lessons_by_subject_stats'];
+require_once __DIR__ . '/../Db.php';
+require_once __DIR__ . '/../Permissions.php';
 
-// Allow students to access read-only actions
-if (!in_array($action, $readOnlyActions) && !Permission::canViewLessons()) {
+// Check if user can manage lessons or quizzes
+if (!Permission::canManageLessons() && !Permission::canManageQuizzes()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Access denied']);
-    exit;
+    exit();
 }
 
-$lessons = new Lessons();
+header('Content-Type: application/json');
 
 try {
-    switch ($action) {
-        case 'datatable':
-            // DataTable server-side processing
-            $draw = intval($_GET['draw'] ?? 1);
-            $start = intval($_GET['start'] ?? 0);
-            $length = intval($_GET['length'] ?? 10);
-            $search = $_GET['search']['value'] ?? '';
-            $orderColumn = intval($_GET['order'][0]['column'] ?? 0);
-            $orderDir = $_GET['order'][0]['dir'] ?? 'desc';
-            
-            $data = $lessons->getPaginated($start, $length, $search, $orderColumn, $orderDir);
-            $totalRecords = $lessons->getTotalCount();
-            $filteredRecords = $lessons->getTotalCount($search);
-            
-            echo json_encode([
-                'draw' => $draw,
-                'recordsTotal' => $totalRecords,
-                'recordsFiltered' => $filteredRecords,
-                'data' => $data
-            ]);
-            break;
-            
-        case 'list':
-            // Get all lessons for export
-            $data = $lessons->getAllForDataTable();
-            echo json_encode(['success' => true, 'data' => $data]);
-            break;
-            
-        case 'get_lesson':
-            // Check if user can view lessons (needed for editing)
-            if (!Permission::canViewLessons()) {
-                throw new Exception('You do not have permission to view lesson details');
-            }
-            
-            $id = $_POST['id'] ?? '';
-            if (empty($id)) {
-                throw new Exception('Lesson ID is required');
-            }
-            
-            $lesson = $lessons->getById($id);
-            if (!$lesson) {
-                throw new Exception('Lesson not found');
-            }
-            
-            echo json_encode(['success' => true, 'data' => $lesson]);
-            break;
-            
-        case 'create_lesson':
-            // Check if user can add lessons
-            if (!Permission::canAddLessons()) {
-                throw new Exception('You do not have permission to create lessons');
-            }
-            
-            $subject_id = $_POST['subject_id'] ?? '';
-            $title = $_POST['title'] ?? '';
-            $content = $_POST['content'] ?? '';
-            
-            // Validation
-            if (empty($subject_id) || empty($title) || empty($content)) {
-                throw new Exception('All fields are required');
-            }
-            
-            if (!is_numeric($subject_id)) {
-                throw new Exception('Invalid subject selection');
-            }
-            
-            if (strlen($title) < 3) {
-                throw new Exception('Title must be at least 3 characters');
-            }
-            
-            if (strlen($content) < 10) {
-                throw new Exception('Content must be at least 10 characters');
-            }
-            
-            $data = [
-                'subject_id' => $subject_id,
-                'title' => $title,
-                'content' => $content
-            ];
-            
-            $lessonId = $lessons->create($data);
-            echo json_encode(['success' => true, 'message' => 'Lesson created successfully', 'id' => $lessonId]);
-            break;
-            
-        case 'update_lesson':
-            // Check if user can edit lessons
-            if (!Permission::canEditLessons()) {
-                throw new Exception('You do not have permission to edit lessons');
-            }
-            
-            $id = $_POST['id'] ?? '';
-            $subject_id = $_POST['subject_id'] ?? '';
-            $title = $_POST['title'] ?? '';
-            $content = $_POST['content'] ?? '';
-            
-            // Validation
-            if (empty($id) || empty($subject_id) || empty($title) || empty($content)) {
-                throw new Exception('All fields are required');
-            }
-            
-            if (!is_numeric($id) || !is_numeric($subject_id)) {
-                throw new Exception('Invalid ID or subject selection');
-            }
-            
-            if (strlen($title) < 3) {
-                throw new Exception('Title must be at least 3 characters');
-            }
-            
-            if (strlen($content) < 10) {
-                throw new Exception('Content must be at least 10 characters');
-            }
-            
-            $data = [
-                'subject_id' => $subject_id,
-                'title' => $title,
-                'content' => $content
-            ];
-            
-            $lessons->update($id, $data);
-            echo json_encode(['success' => true, 'message' => 'Lesson updated successfully']);
-            break;
-            
-        case 'delete_lesson':
-            // Check if user can delete lessons
-            if (!Permission::canDeleteLessons()) {
-                throw new Exception('You do not have permission to delete lessons');
-            }
-            
-            $id = $_POST['id'] ?? '';
-            if (empty($id)) {
-                throw new Exception('Lesson ID is required');
-            }
-            
-            $lessons->delete($id);
-            echo json_encode(['success' => true, 'message' => 'Lesson deleted successfully']);
-            break;
-            
-        case 'get_subjects':
-            // Get all subjects for dropdown
-            $subjects = $lessons->getAllSubjects();
-            echo json_encode(['success' => true, 'data' => $subjects]);
-            break;
-            
-        case 'get_lessons_by_subject':
-            $subjectId = $_GET['subject_id'] ?? '';
-            if (empty($subjectId)) {
-                throw new Exception('Subject ID is required');
-            }
-            
-            $lessonsData = $lessons->getBySubjectId($subjectId);
-            echo json_encode(['success' => true, 'data' => $lessonsData]);
-            break;
-            
-        case 'statistics':
-            $stats = $lessons->getStatistics();
-            echo json_encode(['success' => true, 'data' => $stats]);
-            break;
-            
-        case 'lessons_by_subject_stats':
-            $stats = $lessons->getLessonsCountBySubject();
-            echo json_encode(['success' => true, 'data' => $stats]);
-            break;
-            
-        default:
-            throw new Exception('Invalid action');
+    $pdo = Db::getConnection();
+    
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        $action = $_GET['action'] ?? '';
+        
+        switch ($action) {
+            case 'get_all':
+                // Get all lessons for dropdown
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        l.id,
+                        l.title,
+                        l.subject_id,
+                        s.name as subject_name
+                    FROM lessons l
+                    LEFT JOIN subjects s ON l.subject_id = s.id
+                    ORDER BY s.name, l.title
+                ");
+                $stmt->execute();
+                $lessons = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                echo json_encode(['success' => true, 'data' => $lessons]);
+                break;
+                
+            default:
+                throw new Exception('Invalid action');
+        }
+        
+    } else {
+        throw new Exception('Invalid request method');
     }
     
 } catch (Exception $e) {

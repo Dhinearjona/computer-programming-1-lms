@@ -19,12 +19,8 @@ $user = $_SESSION['user'];
 $userRole = $user['role'];
 $username = $user['first_name'] . ' ' . $user['last_name'];
 
-// Get grading period filter
-$periodFilter = $_GET['period'] ?? '';
-$pageTitle = 'My Activities';
-if ($periodFilter) {
-    $pageTitle = 'My Activities - ' . ucfirst($periodFilter);
-}
+// Set page title for Midterm
+$pageTitle = 'My Activities - Midterm';
 
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
@@ -47,7 +43,8 @@ require_once __DIR__ . '/components/sideNav.php';
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                <li class="breadcrumb-item active"><?php echo $pageTitle; ?></li>
+                <li class="breadcrumb-item"><a href="my-activities.php">My Activities</a></li>
+                <li class="breadcrumb-item active">Midterm</li>
             </ol>
         </nav>
     </div>
@@ -58,7 +55,7 @@ require_once __DIR__ . '/components/sideNav.php';
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="card-title">My Activities List</h5>
+                            <h5 class="card-title">Midterm Activities List</h5>
                         </div>
 
                         <!-- DataTable -->
@@ -118,6 +115,7 @@ require_once __DIR__ . '/components/sideNav.php';
                 <form id="submissionForm" enctype="multipart/form-data">
                     <input type="hidden" id="submissionActivityId" name="activity_id">
                     <input type="hidden" id="submissionAction" name="action" value="submit_activity">
+
                     <div class="mb-3">
                         <label for="submissionLink" class="form-label">
                             Submission Link
@@ -174,6 +172,13 @@ require_once __DIR__ . '/components/sideNav.php';
     </div>
 </div>
 
+<!-- jQuery -->
+<script src="assets/jquery/jquery-3.7.1.min.js"></script>
+
+<!-- DataTables JS -->
+<script src="assets/js/dataTables/dataTables.js"></script>
+<script src="assets/js/dataTables/dataTables.bootstrap5.js"></script>
+
 <!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -184,7 +189,7 @@ require_once __DIR__ . '/components/sideNav.php';
     window.canViewOwnActivities = <?php echo Permission::canViewOwnActivities() ? 'true' : 'false'; ?>;
     window.canSubmitActivities = <?php echo Permission::canSubmitActivities() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
-    window.periodFilter = '<?php echo $periodFilter; ?>';
+    window.periodFilter = 'midterm'; // Fixed to midterm for this page
 
     // Function to preview submission file
     function previewSubmissionFile(input) {
@@ -209,6 +214,9 @@ require_once __DIR__ . '/components/sideNav.php';
         filePreview.style.display = 'none';
     }
 </script>
+
+<!-- My Activities DataTables JS -->
+<script src="assets/js/dataTables/myActivitiesDataTables.js"></script>
 
 <?php require_once __DIR__ . '/components/footer.php'; ?>
 </body>

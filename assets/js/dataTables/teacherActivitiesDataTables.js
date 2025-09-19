@@ -27,6 +27,13 @@ function initializeSubmissionsTable() {
     ajax: {
       url: "app/API/apiTeacherActivities.php?action=datatable",
       type: "GET",
+      data: function(d) {
+        const periodFilter = document.getElementById('gradingPeriodFilter')?.value || '';
+        if (periodFilter) {
+          d.period = periodFilter;
+        }
+        return d;
+      },
       dataSrc: function(json) {
         return json.data;
       },
@@ -44,53 +51,21 @@ function initializeSubmissionsTable() {
     "columns": [
         { 
             "data": "student_name", 
-            "width": "15%",
-            "render": function(data, type, row) {
-                return `<strong>${data}</strong>`;
-            }
-        },
-        { 
-            "data": "activity_title", 
-            "width": "20%",
+            "width": "25%",
             "render": function(data, type, row) {
                 return `<strong>${data}</strong>`;
             }
         },
         { 
             "data": "subject_name", 
-            "width": "12%",
+            "width": "20%",
             "render": function(data, type, row) {
                 return data ? `<span class="badge bg-primary">${data}</span>` : 'N/A';
             }
         },
         { 
-            "data": "grading_period_name", 
-            "width": "12%",
-            "render": function(data, type, row) {
-                if (data) {
-                    let badgeClass = 'badge bg-primary';
-                    if (data.toLowerCase().includes('prelim')) badgeClass = 'badge bg-info';
-                    else if (data.toLowerCase().includes('midterm')) badgeClass = 'badge bg-warning';
-                    else if (data.toLowerCase().includes('finals')) badgeClass = 'badge bg-danger';
-                    return `<span class="${badgeClass}">${data}</span>`;
-                }
-                return '<span class="badge bg-secondary">N/A</span>';
-            }
-        },
-        { 
-            "data": "submitted_at", 
-            "width": "12%",
-            "render": function(data, type, row) {
-                if (data) {
-                    const date = new Date(data);
-                    return date.toLocaleDateString();
-                }
-                return 'N/A';
-            }
-        },
-        { 
             "data": "status", 
-            "width": "10%",
+            "width": "15%",
             "render": function(data, type, row) {
                 let badgeClass = '';
                 let badgeText = '';
@@ -114,7 +89,7 @@ function initializeSubmissionsTable() {
         },
         { 
             "data": "grade", 
-            "width": "10%",
+            "width": "15%",
             "render": function(data, type, row) {
                 if (data && data !== 'Not Graded') {
                     return `<span class="badge bg-info">${data}</span>`;
@@ -125,13 +100,13 @@ function initializeSubmissionsTable() {
         { 
             "data": "actions", 
             "orderable": false,
-            "width": "9%",
+            "width": "25%",
             "render": function(data, type, row) {
                 let actions = '<div class="btn-group gap-1" role="group">';
                 
                 // View Details button (always available)
                 actions += `
-                    <button class="btn btn-outline-info" onclick="viewSubmission(${data})" title="View Details">
+                    <button class="btn btn-outline-primary" onclick="viewSubmission(${data})" title="View Details">
                         <i class="bi bi-eye"></i>
                     </button>
                 `;
@@ -140,7 +115,7 @@ function initializeSubmissionsTable() {
                 if (window.canManageActivities) {
                     actions += `
                         <button class="btn btn-outline-success" onclick="gradeSubmission(${data})" title="Grade Submission">
-                            <i class="bi bi-star"></i>
+                            <i class="bi bi-pencil"></i>
                         </button>
                     `;
                 }
@@ -150,7 +125,7 @@ function initializeSubmissionsTable() {
             }
         }
     ],
-    "order": [[4, "desc"]],
+    "order": [[0, "asc"]],
     pageLength: 10,
     responsive: true,
     language: {
@@ -176,10 +151,12 @@ function setupModalEvents() {
   });
 }
 
+
 /**
  * View submission details
  */
 function viewSubmission(id) {
+  // Fetch individual submission details
   fetch(`app/API/apiTeacherActivities.php?action=get_submission&id=${id}`, {
     method: 'GET'
   })
@@ -213,45 +190,16 @@ function viewSubmission(id) {
 function populateSubmissionDetailsModal(submission) {
   const content = document.getElementById('submissionDetailsContent');
   
-  // Get status badge
-  const statusBadge = submission.status === 'submitted' 
-    ? '<span class="badge bg-success">Submitted</span>' 
-    : '<span class="badge bg-secondary">Unsubmitted</span>';
-  
-  // Get grade badge
-  const gradeBadge = submission.grade && submission.grade !== 'Not Graded'
-    ? `<span class="badge bg-info">${submission.grade}</span>`
-    : '<span class="badge bg-secondary">Not Graded</span>';
-  
   content.innerHTML = `
     <div class="row">
       <div class="col-md-6">
         <div class="card border-0 bg-light">
           <div class="card-body">
-            <h6 class="card-title text-primary">
-              Student Information
-            </h6>
+            <h6 class="card-title text-primary">Student Information</h6>
             <div class="mb-2">
               <strong>Student Name:</strong><br>
               <span class="text-dark">${submission.student_name}</span>
             </div>
-            <div class="mb-2">
-              <strong>Course:</strong><br>
-              <span class="text-muted">${submission.course || 'N/A'}</span>
-            </div>
-            <div class="mb-2">
-              <strong>Year Level:</strong><br>
-              <span class="text-muted">${submission.year_level || 'N/A'}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card border-0 bg-light">
-          <div class="card-body">
-            <h6 class="card-title text-success">
-              Activity Information
-            </h6>
             <div class="mb-2">
               <strong>Activity Title:</strong><br>
               <span class="text-dark">${submission.activity_title}</span>
@@ -267,86 +215,37 @@ function populateSubmissionDetailsModal(submission) {
           </div>
         </div>
       </div>
-    </div>
-    
-    <div class="row mt-3">
       <div class="col-md-6">
         <div class="card border-0 bg-light">
           <div class="card-body">
-            <h6 class="card-title text-info">
-              Submission Details
-            </h6>
+            <h6 class="card-title text-warning">Submission Content</h6>
             <div class="mb-2">
-              <strong>Submission Date:</strong><br>
+              <strong>Submission Link:</strong><br>
+              ${submission.submission_link ? `<a href="${submission.submission_link}" target="_blank" class="text-primary">${submission.submission_link}</a>` : '<span class="text-muted">No link provided</span>'}
+            </div>
+            <div class="mb-2">
+              <strong>Submission File:</strong><br>
+              ${submission.file_path ? `<a href="uploads/activities/student/${submission.file_path}" target="_blank" class="btn btn-outline-primary">Download File</a>` : '<span class="text-muted">No file uploaded</span>'}
+            </div>
+            <div class="mb-2">
+              <strong>Submission Text:</strong><br>
+              <div class="p-2 bg-white rounded border">
+                ${submission.submission_text || '<span class="text-muted">No text submission</span>'}
+              </div>
+            </div>
+            <div class="mb-2">
+              <strong>Submitted At:</strong><br>
               <span class="text-muted">${submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
-              }) : 'N/A'}</span>
-            </div>
-            <div class="mb-2">
-              <strong>Status:</strong><br>
-              ${statusBadge}
-            </div>
-            <div class="mb-2">
-              <strong>Grade:</strong><br>
-              ${gradeBadge}
+              }) : 'Not submitted'}</span>
             </div>
           </div>
         </div>
       </div>
-      <div class="col-md-6">
-        <div class="card border-0 bg-light">
-          <div class="card-body">
-            <h6 class="card-title text-warning">
-              Submission Content
-            </h6>
-            <div class="mb-2">
-              <strong>Submission Link:</strong><br>
-              ${submission.submission_link ? `<a href="${submission.submission_link}" target="_blank" class="text-primary">${submission.submission_link}</a>` : 'N/A'}
-            </div>
-            <div class="mb-2">
-              <strong>Submission File:</strong><br>
-              ${submission.file_path ? `<a href="uploads/activities/student/${submission.file_path}" target="_blank" class="btn btn-outline-primary">Download File</a>` : 'N/A'}
-            </div>
-            <div class="mb-2">
-              <strong>Submission Text:</strong><br>
-              <div class="p-2 bg-white rounded border">
-                ${submission.submission_text || 'No text submission'}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    ${submission.comments ? `
-    <div class="row mt-3">
-      <div class="col-12">
-        <div class="card border-0 bg-light">
-          <div class="card-body">
-            <h6 class="card-title text-secondary">
-              Teacher Comments
-            </h6>
-            <div class="p-3 bg-white rounded border">
-              ${submission.comments}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    ` : ''}
-    
-    <div class="alert alert-info mt-3">
-      <h6>Submission Information</h6>
-      <ul class="mb-0">
-        <li>This submission was made by the student for the specified activity</li>
-        <li>You can grade this submission using the "Grade Submission" button</li>
-        <li>Grades and comments will be visible to the student</li>
-        <li>All submissions are tracked for academic progress monitoring</li>
-      </ul>
     </div>
   `;
 }
@@ -475,10 +374,11 @@ function resetGradeForm() {
 }
 
 /**
- * Refresh DataTable
+ * Filter submissions by grading period
  */
-function refreshSubmissionsTable() {
+function filterByGradingPeriod() {
   if (teacherSubmissionsTable) {
+    // Reload the main table with new filter
     teacherSubmissionsTable.ajax.reload();
   }
 }

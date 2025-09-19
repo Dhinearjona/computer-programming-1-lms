@@ -14,179 +14,70 @@ require_once __DIR__ . '/../Db.php';
 require_once __DIR__ . '/../Quizzes.php';
 require_once __DIR__ . '/../Permissions.php';
 
-// Check permissions - all roles can view quizzes, but only admin/teacher can manage them
-$userRole = $_SESSION['user']['role'];
-if (!Permission::canManageQuizzes() && !Permission::isStudent()) {
+// Check if user can manage quizzes
+if (!Permission::canManageQuizzes()) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Forbidden']);
+    echo json_encode(['success' => false, 'message' => 'Access denied - Teachers/Admins only']);
     exit();
 }
+
+$userId = $_SESSION['user']['id'];
 
 header('Content-Type: application/json');
 
 try {
     $pdo = Db::getConnection();
     $quizzesModel = new Quizzes($pdo);
-    $userId = $_SESSION['user']['id'];
     
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-        // Check if user has management permissions for CRUD operations
-        if (!Permission::canManageQuizzes()) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'You do not have permission to manage quizzes']);
-            exit();
-        }
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        $action = $_GET['action'] ?? 'datatable';
         
-        switch ($_POST['action']) {
-            case 'create_quiz':
-                // Check add permission
-                if (!Permission::canAddQuizzes()) {
-                    throw new Exception('You do not have permission to add quizzes');
-                }
-                
-                $data = [
-                    'lesson_id' => (int)($_POST['lesson_id'] ?? 0),
-                    'grading_period_id' => (int)($_POST['grading_period_id'] ?? 0),
-                    'title' => trim($_POST['title'] ?? ''),
-                    'max_score' => (int)($_POST['max_score'] ?? 100),
-                    'time_limit_minutes' => (int)($_POST['time_limit_minutes'] ?? 0) ?: null
-                ];
-                
-                if (empty($data['title']) || $data['lesson_id'] <= 0 || $data['grading_period_id'] <= 0) {
-                    throw new Exception('Title, Lesson, and Grading Period are required');
-                }
-                
-                $result = $quizzesModel->create($data);
-                echo json_encode(['success' => true, 'message' => 'Quiz created successfully', 'data' => $result]);
-                break;
-                
-            case 'update_quiz':
-                // Check edit permission
-                if (!Permission::canEditQuizzes()) {
-                    throw new Exception('You do not have permission to edit quizzes');
-                }
-                
-                $id = (int)($_POST['id'] ?? 0);
-                $data = [
-                    'lesson_id' => (int)($_POST['lesson_id'] ?? 0),
-                    'grading_period_id' => (int)($_POST['grading_period_id'] ?? 0),
-                    'title' => trim($_POST['title'] ?? ''),
-                    'max_score' => (int)($_POST['max_score'] ?? 100),
-                    'time_limit_minutes' => (int)($_POST['time_limit_minutes'] ?? 0) ?: null
-                ];
-                
-                if (empty($data['title']) || $data['lesson_id'] <= 0 || $data['grading_period_id'] <= 0 || $id <= 0) {
-                    throw new Exception('Invalid data provided');
-                }
-                
-                // Check if quiz exists
-                $quiz = $quizzesModel->getById($id);
-                if (!$quiz) {
-                    throw new Exception('Quiz not found');
-                }
-                
-                $result = $quizzesModel->update($id, $data);
-                echo json_encode(['success' => true, 'message' => 'Quiz updated successfully', 'data' => $result]);
-                break;
-                
-            case 'delete_quiz':
-                // Check delete permission (Admin only)
-                if (!Permission::canDeleteQuizzes()) {
-                    throw new Exception('You do not have permission to delete quizzes');
-                }
-                
-                $id = (int)($_POST['id'] ?? 0);
-                
-                if ($id <= 0) {
-                    throw new Exception('Invalid quiz ID');
-                }
-                
-                // Check if quiz exists
-                $quiz = $quizzesModel->getById($id);
-                if (!$quiz) {
-                    throw new Exception('Quiz not found');
-                }
-                
-                $result = $quizzesModel->delete($id);
-                echo json_encode(['success' => true, 'message' => 'Quiz deleted successfully', 'data' => $result]);
-                break;
-                
-            case 'get_quiz':
-                $id = (int)($_POST['id'] ?? 0);
-                
-                if ($id <= 0) {
-                    throw new Exception('Invalid quiz ID');
-                }
-                
-                $result = $quizzesModel->getById($id);
-                if (!$result) {
-                    throw new Exception('Quiz not found');
-                }
-                
-                echo json_encode(['success' => true, 'data' => $result]);
-                break;
-                
-            case 'get_quiz_submissions':
-                $id = (int)($_POST['id'] ?? 0);
-                
-                if ($id <= 0) {
-                    throw new Exception('Invalid quiz ID');
-                }
-                
-                // Check if user owns this quiz or is admin/teacher
-                $quiz = $quizzesModel->getById($id);
-                if (!$quiz) {
-                    throw new Exception('Quiz not found');
-                }
-                
-                if ($userRole !== 'admin' && $userRole !== 'teacher' && $quiz['author_id'] != $userId) {
-                    throw new Exception('You can only view submissions for your own quizzes');
-                }
-                
-                $submissions = $quizzesModel->getSubmissions($id);
-                echo json_encode(['success' => true, 'data' => $submissions]);
-                break;
-                
-            case 'get_quiz_statistics':
-                $id = (int)($_POST['id'] ?? 0);
-                
-                if ($id <= 0) {
-                    throw new Exception('Invalid quiz ID');
-                }
-                
-                // Check if user owns this quiz or is admin
-                $quiz = $quizzesModel->getById($id);
-                if (!$quiz) {
-                    throw new Exception('Quiz not found');
-                }
-                
-                if ($userRole !== 'admin' && $quiz['author_id'] != $userId) {
-                    throw new Exception('You can only view statistics for your own quizzes');
-                }
-                
-                $statistics = $quizzesModel->getStatistics($id);
-                echo json_encode(['success' => true, 'data' => $statistics]);
-                break;
-                
-            default:
-                throw new Exception('Invalid action');
-        }
-        
-    } elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
-        switch ($_GET['action']) {
-            case 'list':
-                $quizzes = $quizzesModel->getAll();
-                echo json_encode(['success' => true, 'data' => $quizzes]);
-                break;
-                
+        switch ($action) {
             case 'datatable':
-                $quizzes = $quizzesModel->getAllForDataTable();
-                echo json_encode(['data' => $quizzes]);
-                break;
+                // Get quizzes for the teacher/admin
+                $sql = "
+                    SELECT 
+                        q.*,
+                        l.title as lesson_title,
+                        gp.name as grading_period_name,
+                        s.name as subject_name
+                    FROM quizzes q
+                    LEFT JOIN lessons l ON q.lesson_id = l.id
+                    LEFT JOIN grading_periods gp ON q.grading_period_id = gp.id
+                    LEFT JOIN subjects s ON l.subject_id = s.id
+                    ORDER BY q.created_at DESC
+                ";
                 
-            case 'my_quizzes':
-                $quizzes = $quizzesModel->getAll();
-                echo json_encode(['success' => true, 'data' => $quizzes]);
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute();
+                $quizzes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                $quizData = [];
+                foreach ($quizzes as $quiz) {
+                    $quizData[] = [
+                        'id' => $quiz['id'],
+                        'title' => $quiz['title'],
+                        'description' => $quiz['description'],
+                        'lesson_title' => $quiz['lesson_title'],
+                        'subject_name' => $quiz['subject_name'],
+                        'grading_period_name' => $quiz['grading_period_name'],
+                        'max_score' => $quiz['max_score'],
+                        'time_limit_minutes' => $quiz['time_limit_minutes'],
+                        'attempts_allowed' => $quiz['attempts_allowed'],
+                        'display_mode' => $quiz['display_mode'],
+                        'open_at' => $quiz['open_at'],
+                        'close_at' => $quiz['close_at'],
+                        'created_at' => $quiz['created_at']
+                    ];
+                }
+                
+                // Return DataTables format
+                echo json_encode([
+                    'draw' => intval($_GET['draw'] ?? 1),
+                    'recordsTotal' => count($quizData),
+                    'recordsFiltered' => count($quizData),
+                    'data' => $quizData
+                ]);
                 break;
                 
             case 'get_quiz':
@@ -196,30 +87,225 @@ try {
                     throw new Exception('Invalid quiz ID');
                 }
                 
-                $result = $quizzesModel->getById($id);
-                if (!$result) {
-                    throw new Exception('Quiz not found');
+                try {
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            q.*,
+                            l.title as lesson_title,
+                            gp.name as grading_period_name,
+                            s.name as subject_name
+                        FROM quizzes q
+                        LEFT JOIN lessons l ON q.lesson_id = l.id
+                        LEFT JOIN grading_periods gp ON q.grading_period_id = gp.id
+                        LEFT JOIN subjects s ON l.subject_id = s.id
+                        WHERE q.id = ?
+                    ");
+                    $stmt->execute([$id]);
+                    $quiz = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$quiz) {
+                        throw new Exception('Quiz not found');
+                    }
+                    
+                    // Log the quiz data for debugging
+                    error_log("Quiz data retrieved: " . json_encode($quiz));
+                    
+                    echo json_encode(['success' => true, 'data' => $quiz]);
+                } catch (PDOException $e) {
+                    error_log("Database error in get_quiz: " . $e->getMessage());
+                    throw new Exception('Database error: ' . $e->getMessage());
+                }
+                break;
+                
+            case 'export':
+                // Export quizzes data as CSV
+                $sql = "
+                    SELECT 
+                        q.id,
+                        q.title,
+                        q.description,
+                        l.title as lesson_title,
+                        gp.name as grading_period_name,
+                        s.name as subject_name,
+                        q.max_score,
+                        q.time_limit_minutes,
+                        q.attempts_allowed,
+                        q.display_mode,
+                        q.open_at,
+                        q.close_at,
+                        q.created_at
+                    FROM quizzes q
+                    LEFT JOIN lessons l ON q.lesson_id = l.id
+                    LEFT JOIN grading_periods gp ON q.grading_period_id = gp.id
+                    LEFT JOIN subjects s ON l.subject_id = s.id
+                    ORDER BY q.created_at DESC
+                ";
+                
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute();
+                $quizzes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Set headers for CSV download
+                header('Content-Type: text/csv');
+                header('Content-Disposition: attachment; filename="quizzes_export_' . date('Y-m-d') . '.csv"');
+                header('Pragma: no-cache');
+                header('Expires: 0');
+                
+                // Create CSV output
+                $output = fopen('php://output', 'w');
+                
+                // Add CSV headers
+                fputcsv($output, [
+                    'ID', 'Title', 'Description', 'Lesson', 'Subject', 'Grading Period', 
+                    'Max Score', 'Time Limit (mins)', 'Attempts Allowed', 'Display Mode',
+                    'Open Date', 'Close Date', 'Created Date'
+                ]);
+                
+                // Add data rows
+                foreach ($quizzes as $quiz) {
+                    fputcsv($output, [
+                        $quiz['id'],
+                        $quiz['title'],
+                        $quiz['description'],
+                        $quiz['lesson_title'],
+                        $quiz['subject_name'],
+                        ucfirst($quiz['grading_period_name']),
+                        $quiz['max_score'],
+                        $quiz['time_limit_minutes'] ?: 'No limit',
+                        $quiz['attempts_allowed'],
+                        ucfirst(str_replace('_', ' ', $quiz['display_mode'])),
+                        $quiz['open_at'],
+                        $quiz['close_at'],
+                        $quiz['created_at']
+                    ]);
                 }
                 
-                echo json_encode(['success' => true, 'data' => $result]);
+                fclose($output);
+                exit; // Important: exit after CSV output
                 break;
                 
-            case 'get_lessons':
-                $stmt = $pdo->query("SELECT id, title FROM lessons ORDER BY title");
-                $lessons = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                echo json_encode(['success' => true, 'data' => $lessons]);
+            default:
+                throw new Exception('Invalid action');
+        }
+        
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $action = $_POST['action'] ?? '';
+        
+        switch ($action) {
+            case 'create_quiz':
+                // Validate required fields
+                $requiredFields = ['lesson_id', 'grading_period_id', 'title', 'max_score', 'attempts_allowed', 'display_mode', 'open_at', 'close_at'];
+                foreach ($requiredFields as $field) {
+                    if (empty($_POST[$field])) {
+                        throw new Exception("Field '{$field}' is required");
+                    }
+                }
+                
+                // Validate dates
+                $openAt = $_POST['open_at'];
+                $closeAt = $_POST['close_at'];
+                
+                if (strtotime($openAt) >= strtotime($closeAt)) {
+                    throw new Exception('Close date must be after open date');
+                }
+                
+                // Create quiz
+                $quizData = [
+                    'lesson_id' => (int)$_POST['lesson_id'],
+                    'grading_period_id' => (int)$_POST['grading_period_id'],
+                    'title' => trim($_POST['title']),
+                    'description' => trim($_POST['description'] ?? ''),
+                    'max_score' => (int)$_POST['max_score'],
+                    'time_limit_minutes' => !empty($_POST['time_limit_minutes']) ? (int)$_POST['time_limit_minutes'] : null,
+                    'attempts_allowed' => (int)$_POST['attempts_allowed'],
+                    'display_mode' => $_POST['display_mode'],
+                    'open_at' => $openAt,
+                    'close_at' => $closeAt
+                ];
+                
+                $quizId = $quizzesModel->create($quizData);
+                
+                if ($quizId) {
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => 'Quiz created successfully',
+                        'quiz_id' => $quizId
+                    ]);
+                } else {
+                    throw new Exception('Failed to create quiz');
+                }
                 break;
                 
-            case 'get_grading_periods':
-                $stmt = $pdo->query("
-                    SELECT gp.id, gp.name, s.name as semester_name, s.academic_year 
-                    FROM grading_periods gp 
-                    JOIN semesters s ON gp.semester_id = s.id 
-                    WHERE gp.status = 'active' 
-                    ORDER BY s.academic_year DESC, gp.name
-                ");
-                $gradingPeriods = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                echo json_encode(['success' => true, 'data' => $gradingPeriods]);
+            case 'update_quiz':
+                $id = (int)($_POST['id'] ?? 0);
+                
+                if ($id <= 0) {
+                    throw new Exception('Invalid quiz ID');
+                }
+                
+                // Validate required fields
+                $requiredFields = ['lesson_id', 'grading_period_id', 'title', 'max_score', 'attempts_allowed', 'display_mode', 'open_at', 'close_at'];
+                foreach ($requiredFields as $field) {
+                    if (empty($_POST[$field])) {
+                        throw new Exception("Field '{$field}' is required");
+                    }
+                }
+                
+                // Validate dates
+                $openAt = $_POST['open_at'];
+                $closeAt = $_POST['close_at'];
+                
+                if (strtotime($openAt) >= strtotime($closeAt)) {
+                    throw new Exception('Close date must be after open date');
+                }
+                
+                // Update quiz
+                $quizData = [
+                    'lesson_id' => (int)$_POST['lesson_id'],
+                    'grading_period_id' => (int)$_POST['grading_period_id'],
+                    'title' => trim($_POST['title']),
+                    'description' => trim($_POST['description'] ?? ''),
+                    'max_score' => (int)$_POST['max_score'],
+                    'time_limit_minutes' => !empty($_POST['time_limit_minutes']) ? (int)$_POST['time_limit_minutes'] : null,
+                    'attempts_allowed' => (int)$_POST['attempts_allowed'],
+                    'display_mode' => $_POST['display_mode'],
+                    'open_at' => $openAt,
+                    'close_at' => $closeAt
+                ];
+                
+                $success = $quizzesModel->update($id, $quizData);
+                
+                if ($success) {
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => 'Quiz updated successfully'
+                    ]);
+                } else {
+                    throw new Exception('Failed to update quiz');
+                }
+                break;
+                
+            case 'delete_quiz':
+                if (!Permission::canDeleteQuizzes()) {
+                    throw new Exception('Access denied - Admin only');
+                }
+                
+                $id = (int)($_POST['id'] ?? 0);
+                
+                if ($id <= 0) {
+                    throw new Exception('Invalid quiz ID');
+                }
+                
+                $success = $quizzesModel->delete($id);
+                
+                if ($success) {
+                    echo json_encode([
+                        'success' => true, 
+                        'message' => 'Quiz deleted successfully'
+                    ]);
+                } else {
+                    throw new Exception('Failed to delete quiz');
+                }
                 break;
                 
             default:

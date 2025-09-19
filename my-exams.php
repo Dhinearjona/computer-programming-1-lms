@@ -22,11 +22,13 @@ $username = $user['first_name'] . ' ' . $user['last_name'];
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
 
-// Check if user can view their own quizzes
-if (!Permission::canViewOwnQuizzes()) {
+// Check if user has permission to view own exams (students only)
+if (!Permission::canViewOwnQuizzes() || Permission::canManageQuizzes()) {
     header('Location: index.php');
     exit();
 }
+
+$pageTitle = "My Exams";
 
 // Include layout components
 require_once __DIR__ . '/components/header.php';
@@ -36,11 +38,11 @@ require_once __DIR__ . '/components/sideNav.php';
 
 <main id="main" class="main">
     <div class="pagetitle">
-        <h1>My Quizzes</h1>
+        <h1><?php echo $pageTitle; ?></h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                <li class="breadcrumb-item active">My Quizzes</li>
+                <li class="breadcrumb-item active">My Exams</li>
             </ol>
         </nav>
     </div>
@@ -51,18 +53,15 @@ require_once __DIR__ . '/components/sideNav.php';
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="card-title">My Quizzes List (Computer Programming 1)</h5>
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-outline-info" onclick="refreshQuizzesTable()"
-                                    title="Refresh">
-                                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                                </button>
-                            </div>
+                            <h5 class="card-title"><?php echo $pageTitle; ?></h5>
+                            <button type="button" class="btn btn-outline-primary" onclick="refreshExamsTable()" title="Refresh">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
                         </div>
 
                         <!-- DataTable -->
                         <div class="table-responsive">
-                            <table class="table table-striped" id="myQuizzesTable">
+                            <table class="table table-striped" id="myExamsTable">
                                 <thead>
                                     <tr>
                                         <th>Title</th>
@@ -85,25 +84,41 @@ require_once __DIR__ . '/components/sideNav.php';
     </section>
 </main>
 
-<!-- Quiz Details Modal -->
-<div class="modal fade" id="quizDetailsModal" tabindex="-1">
+<!-- Exam Details Modal -->
+<div class="modal fade" id="examDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="quizDetailsTitle">Quiz Details</h5>
+                <h5 class="modal-title" id="examDetailsModalTitle">
+                    Exam Details
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="quizDetailsContent">
-                    <!-- Quiz details will be loaded here -->
+                <div id="examDetailsContent">
+                    <!-- Content will be populated by JavaScript -->
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Vendor JS Files -->
+<script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
+<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="assets/vendor/chart.js/chart.umd.js"></script>
+<script src="assets/vendor/echarts/echarts.min.js"></script>
+<script src="assets/vendor/simple-datatables/simple-datatables.js"></script>
+<script src="assets/vendor/tinymce/tinymce.min.js"></script>
+<script src="assets/vendor/php-email-form/validate.js"></script>
+
+<!-- Template Main JS File -->
+<script src="assets/js/main.js"></script>
 
 <!-- jQuery -->
 <script src="assets/jquery/jquery-3.7.1.min.js"></script>
@@ -115,18 +130,17 @@ require_once __DIR__ . '/components/sideNav.php';
 <!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<!-- My Exams DataTables JS -->
+<script src="assets/js/dataTables/myExamsDataTables.js"></script>
+
 <!-- Pass permissions to JavaScript -->
 <script>
     window.currentUserRole = '<?php echo $userRole; ?>';
-    window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
     window.canViewOwnQuizzes = <?php echo Permission::canViewOwnQuizzes() ? 'true' : 'false'; ?>;
     window.canTakeQuizzes = <?php echo Permission::canTakeQuizzes() ? 'true' : 'false'; ?>;
+    window.isStudent = <?php echo Permission::isStudent() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
-    // No period filter for main page - shows all quizzes
 </script>
-
-<!-- My Quizzes DataTables JS -->
-<script src="assets/js/dataTables/myQuizzesDataTables.js"></script>
 
 <?php require_once __DIR__ . '/components/footer.php'; ?>
 </body>

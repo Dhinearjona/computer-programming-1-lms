@@ -50,6 +50,9 @@ try {
         
         switch ($action) {
             case 'datatable':
+                // Get period filter if provided
+                $periodFilter = $_GET['period'] ?? '';
+                
                 // Get activities for the student's subject (Computer Programming 1)
                 $activities = $activitiesModel->getAll();
                 
@@ -58,12 +61,32 @@ try {
                 foreach ($activities as $activity) {
                     // Only show activities for Computer Programming 1 (subject_id = 1)
                     if ($activity['subject_id'] == 1) {
-                        // Check if student has submitted this activity
+                        // Apply grading period filter if specified
+                        if ($periodFilter && !empty($periodFilter)) {
+                            $gradingPeriodName = strtolower($activity['grading_period_name']);
+                            if (strpos($gradingPeriodName, strtolower($periodFilter)) === false) {
+                                continue; // Skip this activity if it doesn't match the period filter
+                            }
+                        }
+                        // Check if student has submitted this activity and get grade
                         $submissionStmt = $pdo->prepare("
-                            SELECT status, submission_link, submission_text, submitted_at 
-                            FROM activity_submissions 
-                            WHERE activity_id = ? AND student_id = ? 
-                            ORDER BY submitted_at DESC 
+                            SELECT 
+                                asub.status, 
+                                asub.submission_link, 
+                                asub.submission_text, 
+                                asub.file_path, 
+                                asub.submitted_at,
+                                ag.score,
+                                ag.max_score,
+                                CASE 
+                                    WHEN ag.score IS NOT NULL AND ag.max_score IS NOT NULL 
+                                    THEN CONCAT(ag.score, '/', ag.max_score)
+                                    ELSE NULL
+                                END as grade
+                            FROM activity_submissions asub
+                            LEFT JOIN activity_grades ag ON asub.id = ag.submission_id
+                            WHERE asub.activity_id = ? AND asub.student_id = ? 
+                            ORDER BY asub.submitted_at DESC 
                             LIMIT 1
                         ");
                         $submissionStmt->execute([$activity['id'], $studentId]);
@@ -83,7 +106,9 @@ try {
                             'submission_status' => $submission ? $submission['status'] : null,
                             'submission_link' => $submission ? $submission['submission_link'] : null,
                             'submission_text' => $submission ? $submission['submission_text'] : null,
-                            'submitted_at' => $submission ? $submission['submitted_at'] : null
+                            'file_path' => $submission ? $submission['file_path'] : null,
+                            'submitted_at' => $submission ? $submission['submitted_at'] : null,
+                            'grade' => $submission ? $submission['grade'] : null
                         ];
                     }
                 }
@@ -113,6 +138,24 @@ try {
                 if ($activity['subject_id'] != 1) {
                     throw new Exception('Access denied - Activity not available');
                 }
+                
+                // Get student submission if exists
+                $submissionStmt = $pdo->prepare("
+                    SELECT status, submission_link, submission_text, file_path, submitted_at 
+                    FROM activity_submissions 
+                    WHERE activity_id = ? AND student_id = ? 
+                    ORDER BY submitted_at DESC 
+                    LIMIT 1
+                ");
+                $submissionStmt->execute([$id, $studentId]);
+                $submission = $submissionStmt->fetch(PDO::FETCH_ASSOC);
+                
+                // Add submission data to activity
+                $activity['submission_status'] = $submission ? $submission['status'] : null;
+                $activity['submission_link'] = $submission ? $submission['submission_link'] : null;
+                $activity['submission_text'] = $submission ? $submission['submission_text'] : null;
+                $activity['file_path'] = $submission ? $submission['file_path'] : null;
+                $activity['submitted_at'] = $submission ? $submission['submitted_at'] : null;
                 
                 echo json_encode(['success' => true, 'data' => $activity]);
                 break;
@@ -150,12 +193,25 @@ try {
                 foreach ($activities as $activity) {
                     // Only show activities for Computer Programming 1 (subject_id = 1)
                     if ($activity['subject_id'] == 1) {
-                        // Check if student has submitted this activity
+                        // Check if student has submitted this activity and get grade
                         $submissionStmt = $pdo->prepare("
-                            SELECT status, submission_link, submission_text, submitted_at 
-                            FROM activity_submissions 
-                            WHERE activity_id = ? AND student_id = ? 
-                            ORDER BY submitted_at DESC 
+                            SELECT 
+                                asub.status, 
+                                asub.submission_link, 
+                                asub.submission_text, 
+                                asub.file_path, 
+                                asub.submitted_at,
+                                ag.score,
+                                ag.max_score,
+                                CASE 
+                                    WHEN ag.score IS NOT NULL AND ag.max_score IS NOT NULL 
+                                    THEN CONCAT(ag.score, '/', ag.max_score)
+                                    ELSE NULL
+                                END as grade
+                            FROM activity_submissions asub
+                            LEFT JOIN activity_grades ag ON asub.id = ag.submission_id
+                            WHERE asub.activity_id = ? AND asub.student_id = ? 
+                            ORDER BY asub.submitted_at DESC 
                             LIMIT 1
                         ");
                         $submissionStmt->execute([$activity['id'], $studentId]);
@@ -175,7 +231,9 @@ try {
                             'submission_status' => $submission ? $submission['status'] : null,
                             'submission_link' => $submission ? $submission['submission_link'] : null,
                             'submission_text' => $submission ? $submission['submission_text'] : null,
-                            'submitted_at' => $submission ? $submission['submitted_at'] : null
+                            'file_path' => $submission ? $submission['file_path'] : null,
+                            'submitted_at' => $submission ? $submission['submitted_at'] : null,
+                            'grade' => $submission ? $submission['grade'] : null
                         ];
                     }
                 }

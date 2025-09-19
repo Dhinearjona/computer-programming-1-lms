@@ -64,12 +64,16 @@ require_once __DIR__ . '/components/sideNav.php';
                                 My Students' Activity Submissions
                                 <?php endif; ?>
                             </h5>
-                            <div class="btn-group gap-2">
-                                <button type="button" class="btn btn-outline-info" onclick="refreshSubmissionsTable()" title="Refresh">
-                                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                                </button>
+                            <div class="d-flex gap-2 align-items-center">
+                                <select class="form-select" id="gradingPeriodFilter" style="width: auto;" onchange="filterByGradingPeriod()">
+                                    <option value="">All Grading Periods</option>
+                                    <option value="prelim">Prelim</option>
+                                    <option value="midterm">Midterm</option>
+                                    <option value="finals">Finals</option>
+                                </select>
                                 <?php if (Permission::canManageActivities()): ?>
-                                <button type="button" class="btn btn-outline-success" onclick="exportSubmissionsData()" title="Export Data">
+                                <button type="button" class="btn btn-outline-success" onclick="exportSubmissionsData()"
+                                    title="Export Data">
                                     <i class="bi bi-download"></i>
                                 </button>
                                 <?php endif; ?>
@@ -82,10 +86,7 @@ require_once __DIR__ . '/components/sideNav.php';
                                 <thead>
                                     <tr>
                                         <th>Student Name</th>
-                                        <th>Activity Title</th>
                                         <th>Subject</th>
-                                        <th>Grading Period</th>
-                                        <th>Submission Date</th>
                                         <th>Status</th>
                                         <th>Grade</th>
                                         <th>Actions</th>
@@ -134,15 +135,15 @@ require_once __DIR__ . '/components/sideNav.php';
                 <form id="gradeSubmissionForm">
                     <input type="hidden" id="gradeSubmissionId" name="submission_id">
                     <input type="hidden" id="gradeAction" name="action" value="grade_submission">
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="gradeScore" class="form-label">
                                     Score
                                 </label>
-                                <input type="number" class="form-control" id="gradeScore" name="score" 
-                                       min="0" max="100" step="0.01" required>
+                                <input type="number" class="form-control" id="gradeScore" name="score" min="0"
+                                    max="100" step="0.01" required>
                                 <div class="form-text">Enter score out of 100</div>
                             </div>
                         </div>
@@ -151,20 +152,20 @@ require_once __DIR__ . '/components/sideNav.php';
                                 <label for="gradeMaxScore" class="form-label">
                                     Max Score
                                 </label>
-                                <input type="number" class="form-control" id="gradeMaxScore" name="max_score" 
-                                       min="1" max="100" step="0.01" required>
+                                <input type="number" class="form-control" id="gradeMaxScore" name="max_score"
+                                    min="1" max="100" step="0.01" required>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="gradeComments" class="form-label">
                             Comments
                         </label>
-                        <textarea class="form-control" id="gradeComments" name="comments" rows="4" 
-                                  placeholder="Add feedback and comments for the student..."></textarea>
+                        <textarea class="form-control" id="gradeComments" name="comments" rows="4"
+                            placeholder="Add feedback and comments for the student..."></textarea>
                     </div>
-                    
+
                     <div class="alert alert-info">
                         <strong>Note:</strong> Grades will be visible to students once submitted.
                     </div>

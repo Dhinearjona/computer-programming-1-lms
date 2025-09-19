@@ -98,6 +98,10 @@ try {
     } elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         switch ($_GET['action']) {
             case 'datatable':
+                // Get period filter if provided
+                $periodFilter = $_GET['period'] ?? '';
+                $studentNameFilter = $_GET['student_name'] ?? '';
+                
                 // Get submissions with student and activity details
                 $sql = "
                     SELECT 
@@ -133,9 +137,16 @@ try {
                     WHERE asub.status = 'submitted'
                 ";
                 
-                // For now, show all submissions since activities table doesn't have created_by
-                // TODO: Add created_by column to activities table for proper teacher filtering
+                // Apply filters if specified
                 $params = [];
+                if ($periodFilter && !empty($periodFilter)) {
+                    $sql .= " AND LOWER(gp.name) LIKE ?";
+                    $params[] = '%' . strtolower($periodFilter) . '%';
+                }
+                if ($studentNameFilter && !empty($studentNameFilter)) {
+                    $sql .= " AND CONCAT(u.first_name, ' ', u.last_name) = ?";
+                    $params[] = $studentNameFilter;
+                }
                 
                 $sql .= " ORDER BY asub.submitted_at DESC";
                 
@@ -202,6 +213,90 @@ try {
                 }
                 
                 echo json_encode(['success' => true, 'data' => $submission]);
+                break;
+                
+            case 'student_activities':
+                // Get student activities with their submission status
+                $studentNameFilter = $_GET['student_name'] ?? '';
+                $periodFilter = $_GET['period'] ?? '';
+                
+                if (empty($studentNameFilter)) {
+                    throw new Exception('Student name is required');
+                }
+                
+                // First, get the student ID from the name
+                $stmt = $pdo->prepare("
+                    SELECT st.id as student_id 
+                    FROM students st 
+                    LEFT JOIN users u ON st.user_id = u.id 
+                    WHERE CONCAT(u.first_name, ' ', u.last_name) = ?
+                ");
+                $stmt->execute([$studentNameFilter]);
+                $student = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if (!$student) {
+                    throw new Exception('Student not found');
+                }
+                
+                $studentId = $student['student_id'];
+                
+                $sql = "
+                    SELECT 
+                        a.id,
+                        a.title as activity_title,
+                        a.activity_file,
+                        a.due_date,
+                        a.cutoff_date,
+                        s.name as subject_name,
+                        gp.name as grading_period_name,
+                        asub.submission_link,
+                        asub.submission_text,
+                        asub.file_path,
+                        asub.status as submission_status,
+                        asub.submitted_at,
+                        ag.score,
+                        ag.max_score,
+                        CASE 
+                            WHEN ag.score IS NOT NULL AND ag.max_score IS NOT NULL 
+                            THEN CONCAT(ag.score, '/', ag.max_score)
+                            ELSE 'Not Graded'
+                        END as grade
+                    FROM activities a
+                    LEFT JOIN subjects s ON a.subject_id = s.id
+                    LEFT JOIN grading_periods gp ON a.grading_period_id = gp.id
+                    LEFT JOIN activity_submissions asub ON a.id = asub.activity_id AND asub.student_id = ?
+                    LEFT JOIN activity_grades ag ON asub.id = ag.submission_id
+                    WHERE a.subject_id = 1
+                ";
+                
+                $params = [$studentId];
+                
+                // Apply grading period filter if specified
+                if ($periodFilter && !empty($periodFilter)) {
+                    $sql .= " AND LOWER(gp.name) LIKE ?";
+                    $params[] = '%' . strtolower($periodFilter) . '%';
+                }
+                
+                $sql .= " ORDER BY a.due_date DESC";
+                
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+                $activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                $data = [];
+                foreach ($activities as $activity) {
+                    $data[] = [
+                        'activity_title' => $activity['activity_title'],
+                        'file_path' => $activity['file_path'],
+                        'submission_link' => $activity['submission_link'],
+                        'submission_text' => $activity['submission_text'],
+                        'submitted_at' => $activity['submitted_at'],
+                        'grade' => $activity['grade'],
+                        'actions' => $activity['id']
+                    ];
+                }
+                
+                echo json_encode(['data' => $data]);
                 break;
                 
             case 'export':

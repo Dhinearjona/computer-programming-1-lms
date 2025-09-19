@@ -14,8 +14,13 @@ $(document).ready(function() {
     
     initializeActivitiesTable();
     setupModalEvents();
-    loadSubjects();
-    loadGradingPeriods();
+    
+    // Only load subjects and grading periods for users who can manage activities
+    if (window.canManageActivities) {
+        loadSubjects();
+        loadGradingPeriods();
+    }
+    
     window.activitiesTableInitialized = true;
 });
 
@@ -187,14 +192,18 @@ function setupModalEvents() {
     
     // Load subjects and grading periods when modal is shown
     $('#activityModal').on('shown.bs.modal', function () {
-        loadSubjects();
-        loadGradingPeriods();
+        if (window.canManageActivities) {
+            loadSubjects();
+            loadGradingPeriods();
+        }
     });
     
     // Also try loading subjects and grading periods when modal is about to show
     $('#activityModal').on('show.bs.modal', function () {
-        loadSubjects();
-        loadGradingPeriods();
+        if (window.canManageActivities) {
+            loadSubjects();
+            loadGradingPeriods();
+        }
     });
     
     // Form validation

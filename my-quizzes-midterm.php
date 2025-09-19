@@ -19,6 +19,9 @@ $user = $_SESSION['user'];
 $userRole = $user['role'];
 $username = $user['first_name'] . ' ' . $user['last_name'];
 
+// Set page title for Midterm
+$pageTitle = 'My Quizzes - Midterm';
+
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
 
@@ -36,11 +39,12 @@ require_once __DIR__ . '/components/sideNav.php';
 
 <main id="main" class="main">
     <div class="pagetitle">
-        <h1>My Quizzes</h1>
+        <h1><?php echo $pageTitle; ?></h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                <li class="breadcrumb-item active">My Quizzes</li>
+                <li class="breadcrumb-item"><a href="my-quizzes.php">My Quizzes</a></li>
+                <li class="breadcrumb-item active">Midterm</li>
             </ol>
         </nav>
     </div>
@@ -51,7 +55,7 @@ require_once __DIR__ . '/components/sideNav.php';
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="card-title">My Quizzes List (Computer Programming 1)</h5>
+                            <h5 class="card-title">Midterm Quizzes List</h5>
                             <div class="btn-group">
                                 <button type="button" class="btn btn-outline-info" onclick="refreshQuizzesTable()"
                                     title="Refresh">
@@ -122,7 +126,7 @@ require_once __DIR__ . '/components/sideNav.php';
     window.canViewOwnQuizzes = <?php echo Permission::canViewOwnQuizzes() ? 'true' : 'false'; ?>;
     window.canTakeQuizzes = <?php echo Permission::canTakeQuizzes() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
-    // No period filter for main page - shows all quizzes
+    window.periodFilter = 'midterm'; // Fixed to midterm for this page
 </script>
 
 <!-- My Quizzes DataTables JS -->

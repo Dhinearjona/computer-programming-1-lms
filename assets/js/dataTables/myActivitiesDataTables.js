@@ -35,6 +35,9 @@ function initializeMyActivitiesTable() {
             "type": "GET",
             "data": function(d) {
                 d.action = 'datatable';
+                if (window.periodFilter) {
+                    d.period = window.periodFilter;
+                }
                 return d;
             },
             "error": function(xhr, error, thrown) {
@@ -102,7 +105,7 @@ function initializeMyActivitiesTable() {
                 "orderable": false, 
                 "width": "10%",
                 "render": function(data, type, row) {
-                    if (row.grade && row.grade > 0) {
+                    if (row.grade && row.grade !== null) {
                         return '<span class="badge bg-primary">' + row.grade + '</span>';
                     } else {
                         return '<span class="badge bg-light text-dark">Not Graded</span>';

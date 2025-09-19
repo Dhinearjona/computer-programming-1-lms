@@ -22,7 +22,7 @@ $username = $user['first_name'] . ' ' . $user['last_name'];
 // Include Permissions class
 require_once __DIR__ . '/app/Permissions.php';
 
-// Check if user has permission to view quizzes
+// Check if user has permission to view exams
 if (!Permission::canManageQuizzes() && !Permission::canViewOwnQuizzes()) {
     header('Location: index.php');
     exit();
@@ -38,17 +38,17 @@ require_once __DIR__ . '/components/sideNav.php';
     <div class="pagetitle">
         <h1>
             <?php if (Permission::isAdmin()): ?>
-                Quizzes Management
+                Exams Management
             <?php elseif (Permission::isTeacher()): ?>
-                My Quizzes Management
+                My Exams Management
             <?php elseif (Permission::isStudent()): ?>
-                Quizzes
+                Exams
             <?php endif; ?>
         </h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                <li class="breadcrumb-item active">Quizzes</li>
+                <li class="breadcrumb-item active">Exams</li>
             </ol>
         </nav>
     </div>
@@ -61,24 +61,24 @@ require_once __DIR__ . '/components/sideNav.php';
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title">
                                 <?php if (Permission::isAdmin()): ?>
-                                    All Quizzes List
+                                    All Exams List
                                 <?php elseif (Permission::isTeacher()): ?>
-                                    My Quizzes List
+                                    My Exams List
                                 <?php elseif (Permission::isStudent()): ?>
-                                    Available Quizzes
+                                    Available Exams
                                 <?php endif; ?>
                             </h5>
                             <div class="btn-group gap-2">
                                 <?php if (Permission::canManageQuizzes()): ?>
-                                    <button type="button" class="btn btn-outline-success" onclick="exportQuizzesData()"
+                                    <button type="button" class="btn btn-outline-success" onclick="exportExamsData()"
                                         title="Export Data">
                                         <i class="bi bi-download"></i>
                                     </button>
                                 <?php endif; ?>
                                 <?php if (Permission::canAddQuizzes()): ?>
                                     <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                                        data-bs-target="#quizModal">
-                                        Add New Quiz
+                                        data-bs-target="#examModal">
+                                        Add New Exam
                                     </button>
                                 <?php endif; ?>
                             </div>
@@ -86,7 +86,7 @@ require_once __DIR__ . '/components/sideNav.php';
 
                         <!-- DataTable -->
                         <div class="table-responsive">
-                            <table class="table table-striped" id="quizzesTable">
+                            <table class="table table-striped" id="examsTable">
                                 <thead>
                                     <tr>
                                         <th>Title</th>
@@ -117,19 +117,19 @@ require_once __DIR__ . '/components/sideNav.php';
     </section>
 </main>
 
-<!-- Quiz Modal -->
+<!-- Exam Modal -->
 <?php if (Permission::canAddQuizzes()): ?>
-    <div class="modal fade" id="quizModal" tabindex="-1">
+    <div class="modal fade" id="examModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Add New Quiz</h5>
+                    <h5 class="modal-title" id="modalTitle">Add New Exam</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="quizForm">
-                        <input type="hidden" id="quizId" name="id">
-                        <input type="hidden" name="action" id="formAction" value="create_quiz">
+                    <form id="examForm">
+                        <input type="hidden" id="examId" name="id">
+                        <input type="hidden" name="action" id="formAction" value="create_exam">
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -154,10 +154,10 @@ require_once __DIR__ . '/components/sideNav.php';
 
                         <div class="mb-3">
                             <label for="title" class="form-label">
-                                Quiz Title <span class="text-danger">*</span>
+                                Exam Title <span class="text-danger">*</span>
                             </label>
                             <input type="text" class="form-control" id="title" name="title"
-                                placeholder="Enter quiz title..." required>
+                                placeholder="Enter exam title..." required>
                         </div>
 
                         <div class="mb-3">
@@ -165,7 +165,7 @@ require_once __DIR__ . '/components/sideNav.php';
                                 Description
                             </label>
                             <textarea class="form-control" id="description" name="description" rows="3"
-                                placeholder="Enter quiz description/instructions..."></textarea>
+                                placeholder="Enter exam description/instructions..."></textarea>
                         </div>
 
                         <div class="row mb-3">
@@ -178,17 +178,17 @@ require_once __DIR__ . '/components/sideNav.php';
                             </div>
                             <div class="col-md-4">
                                 <label for="time_limit_minutes" class="form-label">
-                                    Time Limit (minutes)
+                                    Time Limit (minutes) <span class="text-danger">*</span>
                                 </label>
                                 <input type="number" class="form-control" id="time_limit_minutes"
-                                    name="time_limit_minutes" min="1" max="300" placeholder="Optional">
+                                    name="time_limit_minutes" min="30" max="300" placeholder="120" value="120" required>
                             </div>
                             <div class="col-md-4">
                                 <label for="attempts_allowed" class="form-label">
                                     Max Attempts
                                 </label>
                                 <input type="number" class="form-control" id="attempts_allowed"
-                                    name="attempts_allowed" value="1" min="1" max="10" required>
+                                    name="attempts_allowed" value="1" min="1" max="3" required>
                             </div>
                         </div>
 
@@ -218,15 +218,16 @@ require_once __DIR__ . '/components/sideNav.php';
                             </div>
                         </div>
 
-                        <div class="alert alert-info">
-                            <h6>Quiz Guidelines</h6>
+                        <div class="alert alert-warning">
+                            <h6><i class="bi bi-exclamation-triangle"></i> Exam Guidelines</h6>
                             <ul class="mb-0">
-                                <li>Choose appropriate lesson and grading period</li>
-                                <li>Set reasonable time limits for students</li>
-                                <li>Use clear and descriptive quiz titles</li>
-                                <li>Consider the difficulty level when setting max score</li>
-                                <li>Set appropriate open/close dates for quiz availability</li>
-                                <li>Choose display mode based on quiz complexity</li>
+                                <li><strong>Exams are more formal assessments</strong> - typically longer and more comprehensive</li>
+                                <li>Default time limit is 120 minutes (2 hours) for thorough evaluation</li>
+                                <li>Limited attempts (usually 1-3) to maintain exam integrity</li>
+                                <li>Choose appropriate lesson and grading period carefully</li>
+                                <li>Set clear open/close dates for exam availability</li>
+                                <li>Consider display mode based on exam complexity and length</li>
+                                <li>Ensure adequate time for students to complete all questions</li>
                             </ul>
                         </div>
                     </form>
@@ -235,7 +236,7 @@ require_once __DIR__ . '/components/sideNav.php';
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         Cancel
                     </button>
-                    <button type="button" class="btn btn-primary" onclick="saveQuiz()">
+                    <button type="button" class="btn btn-primary" onclick="saveExam()">
                         <span id="submitButtonText">Submit</span>
                     </button>
                 </div>
@@ -244,18 +245,18 @@ require_once __DIR__ . '/components/sideNav.php';
     </div>
 <?php endif; ?>
 
-<!-- Quiz Details Modal -->
-<div class="modal fade" id="quizDetailsModal" tabindex="-1">
+<!-- Exam Details Modal -->
+<div class="modal fade" id="examDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="quizDetailsModalTitle">
-                    Quiz Details
+                <h5 class="modal-title" id="examDetailsModalTitle">
+                    Exam Details
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="quizDetailsContent">
+                <div id="examDetailsContent">
                     <!-- Content will be populated by JavaScript -->
                 </div>
             </div>
@@ -280,8 +281,8 @@ require_once __DIR__ . '/components/sideNav.php';
             <div class="modal-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <h6 class="mb-0" id="quizTitleForQuestions">Quiz Title</h6>
-                        <small class="text-muted">Add and manage questions for this quiz</small>
+                        <h6 class="mb-0" id="quizTitleForQuestions">Exam Title</h6>
+                        <small class="text-muted">Add and manage questions for this exam</small>
                     </div>
                     <button type="button" class="btn btn-primary" onclick="addNewQuestion()">
                         Add Question
@@ -344,7 +345,7 @@ require_once __DIR__ . '/components/sideNav.php';
                                 Points <span class="text-danger">*</span>
                             </label>
                             <input type="number" class="form-control" id="questionScore" name="score" 
-                                value="1" min="1" max="100" required>
+                                value="5" min="1" max="100" required>
                         </div>
                     </div>
                     
@@ -400,8 +401,8 @@ require_once __DIR__ . '/components/sideNav.php';
 <!-- SweetAlert2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<!-- Quizzes DataTables JS -->
-<script src="assets/js/dataTables/quizzesDataTables.js"></script>
+<!-- Exams DataTables JS -->
+<script src="assets/js/dataTables/examsDataTables.js"></script>
 
 <!-- Pass permissions to JavaScript -->
 <script>

@@ -14,14 +14,26 @@ $navItems = [
     'activities' => 'collapsed',
     'teacherActivities' => 'collapsed',
     'myActivities' => 'collapsed',
+    'my-activities-prelim' => 'collapsed',
+    'my-activities-midterm' => 'collapsed',
+    'my-activities-finals' => 'collapsed',
     'quizzes' => 'collapsed',
     'myQuizzes' => 'collapsed',
+    'my-quizzes-prelim' => 'collapsed',
+    'my-quizzes-midterm' => 'collapsed',
+    'my-quizzes-finals' => 'collapsed',
+    'exam' => 'collapsed',
+    'myExams' => 'collapsed',
+    'my-exams-prelim' => 'collapsed',
+    'my-exams-midterm' => 'collapsed',
+    'my-exams-finals' => 'collapsed',
     'grades' => 'collapsed',
     'myGrades' => 'collapsed',
     'interventions' => 'collapsed',
     'announcements' => 'collapsed',
     'semester' => 'collapsed',
     'gradingPeriods' => 'collapsed',
+    'attendance' => 'collapsed',
     'settings' => 'collapsed',
 ];
 
@@ -98,6 +110,18 @@ if (array_key_exists($key, $navItems)) {
         </li>
 
         <li class="nav-item">
+            <a class="nav-link <?= $navItems['exam'] ?>" href="exam.php">
+                <i class="bi bi-file-earmark-check"></i><span>Exams</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link <?= $navItems['attendance'] ?>" href="attendance.php">
+                <i class="bi bi-calendar-check"></i><span>Attendance</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a class="nav-link <?= $navItems['grades'] ?>" href="grades.php">
                 <i class="bi bi-trophy"></i><span>Grades</span>
             </a>
@@ -147,6 +171,18 @@ if (array_key_exists($key, $navItems)) {
         </li>
 
         <li class="nav-item">
+            <a class="nav-link <?= $navItems['exam'] ?>" href="exam.php">
+                <i class="bi bi-file-earmark-check"></i><span>Exams</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link <?= $navItems['attendance'] ?>" href="attendance.php">
+                <i class="bi bi-calendar-check"></i><span>Attendance</span>
+            </a>
+        </li>
+
+        <li class="nav-item">
             <a class="nav-link <?= $navItems['grades'] ?>" href="grades.php">
                 <i class="bi bi-trophy"></i><span>Grades</span>
             </a>
@@ -172,15 +208,87 @@ if (array_key_exists($key, $navItems)) {
         </li>
 
         <li class="nav-item">
-            <a class="nav-link <?= $navItems['myActivities'] ?>" href="my-activities.php">
-                <i class="bi bi-file-earmark-text"></i><span>My Activities</span>
+            <a class="nav-link <?= $navItems['myActivities'] ?>" data-bs-toggle="collapse" href="#myActivitiesNav" role="button" aria-expanded="false" aria-controls="myActivitiesNav">
+                <i class="bi bi-file-earmark-text"></i><span>My Activities</span><i class="bi bi-chevron-down ms-auto"></i>
             </a>
+            <ul id="myActivitiesNav" class="nav-content collapse <?= $navItems['myActivities'] === '' ? 'show' : '' ?>">
+                <li>
+                    <a href="my-activities.php" class="<?= $pageName === 'my-activities.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>All Activities</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="my-activities-prelim.php" class="<?= $pageName === 'my-activities-prelim.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Prelim</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="my-activities-midterm.php" class="<?= $pageName === 'my-activities-midterm.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Midterm</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="my-activities-finals.php" class="<?= $pageName === 'my-activities-finals.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Finals</span>
+                    </a>
+                </li>
+            </ul>
         </li>
 
         <li class="nav-item">
-            <a class="nav-link <?= $navItems['myQuizzes'] ?>" href="my-quizzes.php">
-                <i class="bi bi-pencil-square"></i><span>My Quizzes</span>
+            <a class="nav-link <?= $navItems['myQuizzes'] ?>" data-bs-toggle="collapse" href="#myQuizzesNav" role="button" aria-expanded="false" aria-controls="myQuizzesNav">
+                <i class="bi bi-pencil-square"></i><span>My Quizzes</span><i class="bi bi-chevron-down ms-auto"></i>
             </a>
+            <ul id="myQuizzesNav" class="nav-content collapse <?= $navItems['myQuizzes'] === '' ? 'show' : '' ?>">
+                <li>
+                    <a href="my-quizzes.php" class="<?= $pageName === 'my-quizzes.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>All Quizzes</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="my-quizzes-prelim.php" class="<?= $pageName === 'my-quizzes-prelim.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Prelim</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="my-quizzes-midterm.php" class="<?= $pageName === 'my-quizzes-midterm.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Midterm</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="my-quizzes-finals.php" class="<?= $pageName === 'my-quizzes-finals.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Finals</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link <?= $navItems['myExams'] ?>" data-bs-toggle="collapse" href="#myExamsNav" role="button" aria-expanded="false" aria-controls="myExamsNav">
+                <i class="bi bi-file-earmark-check"></i><span>My Exams</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="myExamsNav" class="nav-content collapse <?= $navItems['myExams'] === '' ? 'show' : '' ?>">
+                <li>
+                    <a href="my-exams.php" class="<?= $pageName === 'my-exams.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>All Exams</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="my-exams-prelim.php" class="<?= $pageName === 'my-exams-prelim.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Prelim</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="my-exams-midterm.php" class="<?= $pageName === 'my-exams-midterm.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Midterm</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="my-exams-finals.php" class="<?= $pageName === 'my-exams-finals.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Finals</span>
+                    </a>
+                </li>
+            </ul>
         </li>
 
         <li class="nav-item">
