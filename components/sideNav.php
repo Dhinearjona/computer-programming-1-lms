@@ -13,6 +13,15 @@ $navItems = [
     'lessons' => 'collapsed',
     'activities' => 'collapsed',
     'teacherActivities' => 'collapsed',
+    'teacher-activities-prelim' => 'collapsed',
+    'teacher-activities-midterm' => 'collapsed', 
+    'teacher-activities-finals' => 'collapsed',
+    'quizzes-submissions-prelim' => 'collapsed',
+    'quizzes-submissions-midterm' => 'collapsed',
+    'quizzes-submissions-finals' => 'collapsed',
+    'exam-submissions-prelim' => 'collapsed',
+    'exam-submissions-midterm' => 'collapsed',
+    'exam-submissions-finals' => 'collapsed',
     'myActivities' => 'collapsed',
     'my-activities-prelim' => 'collapsed',
     'my-activities-midterm' => 'collapsed',
@@ -173,9 +182,31 @@ if (array_key_exists($key, $navItems)) {
         </li>
 
         <li class="nav-item">
-            <a class="nav-link <?= $navItems['teacherActivities'] ?>" href="teacher-activities.php">
-                <i class="bi bi-clipboard-check"></i><span>Student Submissions</span>
+            <a class="nav-link <?= $navItems['teacherActivities'] ?>" data-bs-toggle="collapse" href="#teacherActivitiesNav" role="button" aria-expanded="false" aria-controls="teacherActivitiesNav">
+                <i class="bi bi-clipboard-check"></i><span>Student Submissions</span><i class="bi bi-chevron-down ms-auto"></i>
             </a>
+            <ul id="teacherActivitiesNav" class="nav-content collapse <?= $navItems['teacherActivities'] === '' ? 'show' : '' ?>">
+                <li>
+                    <a href="teacher-activities.php" class="<?= $pageName === 'teacher-activities.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>All Submissions</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="teacher-activities-prelim.php" class="<?= $pageName === 'teacher-activities-prelim.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Prelim</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="teacher-activities-midterm.php" class="<?= $pageName === 'teacher-activities-midterm.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Midterm</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="teacher-activities-finals.php" class="<?= $pageName === 'teacher-activities-finals.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Finals</span>
+                    </a>
+                </li>
+            </ul>
         </li>
 
         <li class="nav-item">
@@ -185,9 +216,31 @@ if (array_key_exists($key, $navItems)) {
         </li>
 
         <li class="nav-item">
-            <a class="nav-link <?= $navItems['quizzes-submissions'] ?>" href="quizzes-submissions.php">
-                <i class="bi bi-clipboard-data"></i><span>Quiz Submissions</span>
+            <a class="nav-link <?= $navItems['quizzes-submissions'] ?>" data-bs-toggle="collapse" href="#teacherQuizSubmissionsNav" role="button" aria-expanded="false" aria-controls="teacherQuizSubmissionsNav">
+                <i class="bi bi-clipboard-data"></i><span>Quiz Submissions</span><i class="bi bi-chevron-down ms-auto"></i>
             </a>
+            <ul id="teacherQuizSubmissionsNav" class="nav-content collapse <?= $navItems['quizzes-submissions'] === '' ? 'show' : '' ?>">
+                <li>
+                    <a href="quizzes-submissions.php" class="<?= $pageName === 'quizzes-submissions.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>All Submissions</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="quizzes-submissions-prelim.php" class="<?= $pageName === 'quizzes-submissions-prelim.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Prelim</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="quizzes-submissions-midterm.php" class="<?= $pageName === 'quizzes-submissions-midterm.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Midterm</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="quizzes-submissions-finals.php" class="<?= $pageName === 'quizzes-submissions-finals.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Finals</span>
+                    </a>
+                </li>
+            </ul>
         </li>
 
         <li class="nav-item">
@@ -197,9 +250,31 @@ if (array_key_exists($key, $navItems)) {
         </li>
 
         <li class="nav-item">
-            <a class="nav-link <?= $navItems['exam-submissions'] ?>" href="exam-submissions.php">
-                <i class="bi bi-clipboard-check"></i><span>Exam Submissions</span>
+            <a class="nav-link <?= $navItems['exam-submissions'] ?>" data-bs-toggle="collapse" href="#teacherExamSubmissionsNav" role="button" aria-expanded="false" aria-controls="teacherExamSubmissionsNav">
+                <i class="bi bi-clipboard-check"></i><span>Exam Submissions</span><i class="bi bi-chevron-down ms-auto"></i>
             </a>
+            <ul id="teacherExamSubmissionsNav" class="nav-content collapse <?= $navItems['exam-submissions'] === '' ? 'show' : '' ?>">
+                <li>
+                    <a href="exam-submissions.php" class="<?= $pageName === 'exam-submissions.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>All Submissions</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="exam-submissions-prelim.php" class="<?= $pageName === 'exam-submissions-prelim.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Prelim</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="exam-submissions-midterm.php" class="<?= $pageName === 'exam-submissions-midterm.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Midterm</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="exam-submissions-finals.php" class="<?= $pageName === 'exam-submissions-finals.php' ? 'active' : '' ?>">
+                        <i class="bi bi-circle"></i><span>Finals</span>
+                    </a>
+                </li>
+            </ul>
         </li>
 
         <li class="nav-item">

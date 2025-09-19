@@ -5,6 +5,8 @@
 // Global variables
 var teacherSubmissionsTable;
 var currentSubmissionId = null;
+window.currentTeacherGradingPeriodFilter = window.currentTeacherGradingPeriodFilter || '';
+window.currentTeacherStatusFilter = window.currentTeacherStatusFilter || '';
 
 $(document).ready(function () {
   // Prevent multiple initializations
@@ -23,19 +25,28 @@ $(document).ready(function () {
 function initializeSubmissionsTable() {
   teacherSubmissionsTable = $("#submissionsTable").DataTable({
     processing: true,
-    serverSide: false,
+    serverSide: true,
     ajax: {
       url: "app/API/apiTeacherActivities.php?action=datatable",
       type: "GET",
       data: function(d) {
-        const periodFilter = document.getElementById('gradingPeriodFilter')?.value || '';
-        if (periodFilter) {
-          d.period = periodFilter;
+        const gradingPeriodEl = document.getElementById('teacherActivitiesGradingPeriodFilter');
+        const statusEl = document.getElementById('teacherActivitiesStatusFilter');
+        const gradingPeriod = gradingPeriodEl ? gradingPeriodEl.value : '';
+        const status = statusEl ? statusEl.value : '';
+        
+        console.log('Teacher Activities DataTable - Sending filters:', {
+          grading_period: gradingPeriod,
+          status: status
+        });
+        
+        if (gradingPeriod && gradingPeriod !== '') {
+          d.grading_period = gradingPeriod;
+        }
+        if (status && status !== '') {
+          d.status = status;
         }
         return d;
-      },
-      dataSrc: function(json) {
-        return json.data;
       },
       error: function (xhr, error, thrown) {
         console.error("DataTables error:", error);
@@ -405,10 +416,88 @@ function resetGradeForm() {
  * Filter submissions by grading period
  */
 function filterByGradingPeriod() {
+  const gradingPeriodEl = document.getElementById('teacherActivitiesGradingPeriodFilter');
+  const selectedValue = gradingPeriodEl ? gradingPeriodEl.value : '';
+  console.log('Teacher Activities - Grading Period Filter Changed:', selectedValue);
+  console.log('Teacher Activities - Element found:', !!gradingPeriodEl);
+  
   if (teacherSubmissionsTable) {
-    // Reload the main table with new filter
+    console.log('Teacher Activities - Reloading table with grading period filter');
     teacherSubmissionsTable.ajax.reload();
+  } else {
+    console.error('Teacher Activities - Table not found!');
   }
+}
+
+/**
+ * Filter submissions by status
+ */
+function filterByStatus() {
+  const statusEl = document.getElementById('teacherActivitiesStatusFilter');
+  const selectedValue = statusEl ? statusEl.value : '';
+  console.log('Teacher Activities - Status Filter Changed:', selectedValue);
+  console.log('Teacher Activities - Element found:', !!statusEl);
+  
+  if (teacherSubmissionsTable) {
+    console.log('Teacher Activities - Reloading table with status filter');
+    teacherSubmissionsTable.ajax.reload();
+  } else {
+    console.error('Teacher Activities - Table not found!');
+  }
+}
+
+/**
+ * Test teacher activity filters function
+ */
+function testTeacherActivityFilters() {
+  console.log('=== TEACHER ACTIVITIES FILTER DEBUG ===');
+  
+  // Check DOM elements
+  const gradingPeriodEl = document.getElementById('teacherActivitiesGradingPeriodFilter');
+  const statusEl = document.getElementById('teacherActivitiesStatusFilter');
+  const tableWrapper = document.getElementById('submissionsTable_wrapper');
+  
+  console.log('DOM Elements Check:', {
+    gradingPeriodFilter: !!gradingPeriodEl,
+    statusFilter: !!statusEl,
+    tableWrapper: !!tableWrapper,
+    gradingPeriodValue: gradingPeriodEl ? gradingPeriodEl.value : 'ELEMENT NOT FOUND',
+    statusValue: statusEl ? statusEl.value : 'ELEMENT NOT FOUND'
+  });
+  
+  if (gradingPeriodEl) {
+    console.log('Grading Period Element Details:', {
+      id: gradingPeriodEl.id,
+      value: gradingPeriodEl.value,
+      parentElement: gradingPeriodEl.parentElement?.className
+    });
+  }
+  
+  if (statusEl) {
+    console.log('Status Element Details:', {
+      id: statusEl.id,
+      value: statusEl.value,
+      parentElement: statusEl.parentElement?.className
+    });
+  }
+  
+  const gradingPeriod = gradingPeriodEl ? gradingPeriodEl.value : '';
+  const status = statusEl ? statusEl.value : '';
+  
+  // Test API directly
+  const testUrl = `app/API/apiTeacherActivities.php?action=datatable&draw=999&start=0&length=10&grading_period=${gradingPeriod}&status=${status}`;
+  console.log('Test URL:', testUrl);
+  
+  fetch(testUrl)
+    .then(response => response.json())
+    .then(data => {
+      console.log('API Response:', data);
+      alert(`API Test Results:\nTotal Records: ${data.recordsTotal}\nFiltered Records: ${data.recordsFiltered}\nData Count: ${data.data.length}\n\nCheck console for full response.`);
+    })
+    .catch(error => {
+      console.error('API Test Error:', error);
+      alert('API Test Failed - Check console for details');
+    });
 }
 
 /**

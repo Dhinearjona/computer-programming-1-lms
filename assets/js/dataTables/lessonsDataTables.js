@@ -217,12 +217,13 @@ function validateLessonForm() {
 function editLesson(id) {
     currentLessonEditId = id;
     
+    const formData = new FormData();
+    formData.append('action', 'get_lesson');
+    formData.append('id', id);
+    
     fetch(`app/API/apiLessons.php`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `action=get_lesson&id=${id}`
+        body: formData
     })
     .then(response => response.json())
     .then(data => {

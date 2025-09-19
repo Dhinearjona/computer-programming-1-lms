@@ -65,18 +65,21 @@ require_once __DIR__ . '/components/sideNav.php';
                                 <?php endif; ?>
                             </h5>
                             <div class="d-flex gap-2 align-items-center">
-                                <select class="form-select" id="gradingPeriodFilter" style="width: auto;" onchange="filterByGradingPeriod()">
+                                <select class="form-select" id="quizSubmissionsGradingPeriodFilter" style="width: auto;" onchange="filterByGradingPeriod()">
                                     <option value="">All Grading Periods</option>
                                     <option value="prelim">Prelim</option>
                                     <option value="midterm">Midterm</option>
                                     <option value="finals">Finals</option>
                                 </select>
-                                <select class="form-select" id="statusFilter" style="width: auto;" onchange="filterByStatus()">
+                                <select class="form-select" id="quizSubmissionsStatusFilter" style="width: auto;" onchange="filterByStatus()">
                                     <option value="">All Status</option>
                                     <option value="submitted">Submitted</option>
                                     <option value="in_progress">In Progress</option>
                                     <option value="timeout">Timeout</option>
                                 </select>
+                                <button type="button" class="btn btn-outline-info" onclick="testFilters()" title="Test Filters">
+                                    <i class="bi bi-bug"></i> Test
+                                </button>
                                 <?php if (Permission::canManageQuizzes()): ?>
                                 <button type="button" class="btn btn-outline-success" onclick="exportQuizSubmissionsData()"
                                     title="Export Data">

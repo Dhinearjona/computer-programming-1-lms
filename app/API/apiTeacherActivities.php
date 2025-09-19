@@ -98,12 +98,109 @@ try {
     } elseif ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['action'])) {
         switch ($_GET['action']) {
             case 'datatable':
-                // Get period filter if provided
-                $periodFilter = $_GET['period'] ?? '';
+                // Handle DataTables server-side processing
+                $draw = intval($_GET['draw'] ?? 1);
+                $start = intval($_GET['start'] ?? 0);
+                $length = intval($_GET['length'] ?? 10);
+                $searchValue = $_GET['search']['value'] ?? '';
+                $orderColumn = intval($_GET['order'][0]['column'] ?? 0);
+                $orderDir = $_GET['order'][0]['dir'] ?? 'desc';
+                
+                // Get filters if provided
+                $gradingPeriodFilter = $_GET['grading_period'] ?? '';
+                $statusFilter = $_GET['status'] ?? '';
                 $studentNameFilter = $_GET['student_name'] ?? '';
                 
-                // Get submissions with student and activity details
-                $sql = "
+                error_log("Teacher Activities API - Grading Period Filter: " . $gradingPeriodFilter);
+                error_log("Teacher Activities API - Status Filter: " . $statusFilter);
+                
+                // Column mapping
+                $columns = [
+                    0 => 'student_name',
+                    1 => 'activity_title',
+                    2 => 'subject_name', 
+                    3 => 'grading_period_name',
+                    4 => 'status',
+                    5 => 'grade',
+                    6 => 'actions'
+                ];
+                
+                $orderBy = $columns[$orderColumn] ?? 'asub.submitted_at';
+                
+                // Base query - ensure all joins work with sample data
+                $baseQuery = "
+                    FROM activity_submissions asub
+                    INNER JOIN activities a ON asub.activity_id = a.id
+                    INNER JOIN subjects s ON a.subject_id = s.id
+                    INNER JOIN grading_periods gp ON a.grading_period_id = gp.id
+                    INNER JOIN students st ON asub.student_id = st.id
+                    INNER JOIN users u ON st.user_id = u.id
+                    LEFT JOIN activity_grades ag ON asub.id = ag.submission_id
+                ";
+                
+                // Build WHERE clause
+                $whereClause = "WHERE 1=1";
+                $params = [];
+                
+                // Apply filters if specified
+                if (!empty($gradingPeriodFilter) && $gradingPeriodFilter !== 'all' && $gradingPeriodFilter !== '') {
+                    $whereClause .= " AND gp.name = ?";
+                    $params[] = $gradingPeriodFilter;
+                    error_log("Teacher Activities API - Applied grading period filter: " . $gradingPeriodFilter);
+                }
+                if (!empty($statusFilter) && $statusFilter !== 'all' && $statusFilter !== '') {
+                    $whereClause .= " AND asub.status = ?";
+                    $params[] = $statusFilter;
+                    error_log("Teacher Activities API - Applied status filter: " . $statusFilter);
+                }
+                if ($studentNameFilter && !empty($studentNameFilter)) {
+                    $whereClause .= " AND CONCAT(u.first_name, ' ', u.last_name) = ?";
+                    $params[] = $studentNameFilter;
+                }
+                
+                // Add search filter
+                if (!empty($searchValue)) {
+                    $whereClause .= " AND (
+                        CONCAT(u.first_name, ' ', u.last_name) LIKE ? OR
+                        a.title LIKE ? OR
+                        s.name LIKE ? OR
+                        gp.name LIKE ?
+                    )";
+                    $searchParam = "%{$searchValue}%";
+                    $params = array_merge($params, [$searchParam, $searchParam, $searchParam, $searchParam]);
+                }
+                
+                // Get filtered count
+                $countQuery = "SELECT COUNT(*) as count " . $baseQuery . " " . $whereClause;
+                $countStmt = $pdo->prepare($countQuery);
+                $countStmt->execute($params);
+                $filteredRecords = $countStmt->fetch(PDO::FETCH_ASSOC)['count'];
+                
+                // Get total count (with filters but without search)
+                $totalCountWhereClause = "WHERE 1=1";
+                $totalCountParams = [];
+                
+                // Add same filters as main query (except search)
+                if (!empty($gradingPeriodFilter) && $gradingPeriodFilter !== 'all' && $gradingPeriodFilter !== '') {
+                    $totalCountWhereClause .= " AND gp.name = ?";
+                    $totalCountParams[] = $gradingPeriodFilter;
+                }
+                if (!empty($statusFilter) && $statusFilter !== 'all' && $statusFilter !== '') {
+                    $totalCountWhereClause .= " AND asub.status = ?";
+                    $totalCountParams[] = $statusFilter;
+                }
+                if ($studentNameFilter && !empty($studentNameFilter)) {
+                    $totalCountWhereClause .= " AND CONCAT(u.first_name, ' ', u.last_name) = ?";
+                    $totalCountParams[] = $studentNameFilter;
+                }
+                
+                $totalCountQuery = "SELECT COUNT(*) as count " . $baseQuery . " " . $totalCountWhereClause;
+                $totalCountStmt = $pdo->prepare($totalCountQuery);
+                $totalCountStmt->execute($totalCountParams);
+                $totalRecords = $totalCountStmt->fetch(PDO::FETCH_ASSOC)['count'];
+                
+                // Get paginated data
+                $dataQuery = "
                     SELECT 
                         asub.id,
                         asub.submission_link,
@@ -127,48 +224,36 @@ try {
                             THEN CONCAT(ag.score, '/', ag.max_score)
                             ELSE 'Not Graded'
                         END as grade
-                    FROM activity_submissions asub
-                    LEFT JOIN activities a ON asub.activity_id = a.id
-                    LEFT JOIN subjects s ON a.subject_id = s.id
-                    LEFT JOIN grading_periods gp ON a.grading_period_id = gp.id
-                    LEFT JOIN students st ON asub.student_id = st.id
-                    LEFT JOIN users u ON st.user_id = u.id
-                    LEFT JOIN activity_grades ag ON asub.id = ag.submission_id
-                    WHERE asub.status = 'submitted'
+                    " . $baseQuery . " " . $whereClause . "
+                    ORDER BY {$orderBy} {$orderDir}
+                    LIMIT {$start}, {$length}
                 ";
                 
-                // Apply filters if specified
-                $params = [];
-                if ($periodFilter && !empty($periodFilter)) {
-                    $sql .= " AND LOWER(gp.name) LIKE ?";
-                    $params[] = '%' . strtolower($periodFilter) . '%';
-                }
-                if ($studentNameFilter && !empty($studentNameFilter)) {
-                    $sql .= " AND CONCAT(u.first_name, ' ', u.last_name) = ?";
-                    $params[] = $studentNameFilter;
-                }
+                $dataStmt = $pdo->prepare($dataQuery);
+                $dataStmt->execute($params);
+                $submissions = $dataStmt->fetchAll(PDO::FETCH_ASSOC);
                 
-                $sql .= " ORDER BY asub.submitted_at DESC";
-                
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute($params);
-                $submissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                $data = [];
+                // Format data for DataTables
+                $formattedData = [];
                 foreach ($submissions as $submission) {
-                    $data[] = [
-                        'student_name' => $submission['student_name'],
-                        'activity_title' => $submission['activity_title'],
-                        'subject_name' => $submission['subject_name'],
-                        'grading_period_name' => $submission['grading_period_name'],
-                        'submitted_at' => $submission['submitted_at'],
+                    $formattedData[] = [
+                        'student_name' => htmlspecialchars($submission['student_name']),
+                        'activity_title' => htmlspecialchars($submission['activity_title']),
+                        'subject_name' => htmlspecialchars($submission['subject_name']),
+                        'grading_period_name' => htmlspecialchars($submission['grading_period_name']),
                         'status' => $submission['status'],
                         'grade' => $submission['grade'],
                         'actions' => $submission['id']
                     ];
                 }
                 
-                echo json_encode(['data' => $data]);
+                // Return DataTables response
+                echo json_encode([
+                    'draw' => $draw,
+                    'recordsTotal' => $totalRecords,
+                    'recordsFiltered' => $filteredRecords,
+                    'data' => $formattedData
+                ]);
                 break;
                 
             case 'get_submission':

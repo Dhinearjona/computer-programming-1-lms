@@ -71,16 +71,20 @@ try {
                 
                 // Add grading period filter
                 $gradingPeriodFilter = $_GET['grading_period'] ?? '';
-                if (!empty($gradingPeriodFilter)) {
+                error_log("Quiz Submissions API - Grading Period Filter: " . $gradingPeriodFilter);
+                if (!empty($gradingPeriodFilter) && $gradingPeriodFilter !== 'all' && $gradingPeriodFilter !== '') {
                     $whereClause .= " AND gp.name = ?";
                     $params[] = $gradingPeriodFilter;
+                    error_log("Quiz Submissions API - Applied grading period filter: " . $gradingPeriodFilter);
                 }
                 
                 // Add status filter
                 $statusFilter = $_GET['status'] ?? '';
-                if (!empty($statusFilter)) {
+                error_log("Quiz Submissions API - Status Filter: " . $statusFilter);
+                if (!empty($statusFilter) && $statusFilter !== 'all' && $statusFilter !== '') {
                     $whereClause .= " AND qa.status = ?";
                     $params[] = $statusFilter;
+                    error_log("Quiz Submissions API - Applied status filter: " . $statusFilter);
                 }
                 
                 // Add search filter
@@ -106,12 +110,12 @@ try {
                 $totalCountParams = [];
                 
                 // Add same filters as main query (except search)
-                if (!empty($gradingPeriodFilter)) {
+                if (!empty($gradingPeriodFilter) && $gradingPeriodFilter !== 'all' && $gradingPeriodFilter !== '') {
                     $totalCountWhereClause .= " AND gp.name = ?";
                     $totalCountParams[] = $gradingPeriodFilter;
                 }
                 
-                if (!empty($statusFilter)) {
+                if (!empty($statusFilter) && $statusFilter !== 'all' && $statusFilter !== '') {
                     $totalCountWhereClause .= " AND qa.status = ?";
                     $totalCountParams[] = $statusFilter;
                 }
@@ -187,18 +191,15 @@ try {
                         'score' => $submission['score'] . '/' . $submission['max_score'] . ' (' . $percentage . '%)',
                         'status' => $statusBadge,
                         'submitted_at' => $submittedAt,
-                        'actions' => '
-                            <div class="btn-group gap-2" role="group">
-                                <button class="btn btn-outline-primary" onclick="viewQuizSubmissionDetails(' . $submission['id'] . ')" title="View Details">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                ' . ($submission['status'] === 'submitted' ? '
-                                <button class="btn btn-outline-success" onclick="gradeQuizSubmission(' . $submission['id'] . ')" title="Add Comments">
-                                    <i class="bi bi-chat-left-text"></i>
-                                </button>
-                                ' : '') . '
-                            </div>
-                        '
+                        'actions' => '<div class="btn-group gap-2" role="group">' .
+                            '<button class="btn btn-outline-primary" onclick="viewQuizSubmissionDetails(' . $submission['id'] . ')" title="View Details">' .
+                                '<i class="bi bi-eye"></i>' .
+                            '</button>' .
+                            ($submission['status'] === 'submitted' ? 
+                                '<button class="btn btn-outline-success" onclick="gradeQuizSubmission(' . $submission['id'] . ')" title="Add Comments">' .
+                                    '<i class="bi bi-chat-left-text"></i>' .
+                                '</button>' : '') .
+                            '</div>'
                     ];
                 }
                 

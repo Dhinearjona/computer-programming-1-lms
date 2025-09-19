@@ -4,13 +4,32 @@
 
 // Global variables - use window object to avoid redeclaration
 window.quizSubmissionsTable = window.quizSubmissionsTable || null;
-window.currentGradingPeriodFilter = window.currentGradingPeriodFilter || '';
-window.currentStatusFilter = window.currentStatusFilter || '';
 
 $(document).ready(function() {
     initializeQuizSubmissionsTable();
     setupModalEvents();
 });
+
+/**
+ * Get current filter values
+ */
+function getCurrentFilters() {
+    const gradingPeriodEl = document.getElementById('quizSubmissionsGradingPeriodFilter');
+    const statusEl = document.getElementById('quizSubmissionsStatusFilter');
+    
+    const filters = {
+        grading_period: gradingPeriodEl ? gradingPeriodEl.value : '',
+        status: statusEl ? statusEl.value : ''
+    };
+    
+    console.log('getCurrentFilters - Found elements:', {
+        gradingPeriodEl: !!gradingPeriodEl,
+        statusEl: !!statusEl,
+        values: filters
+    });
+    
+    return filters;
+}
 
 /**
  * Initialize Quiz Submissions DataTable
@@ -28,8 +47,17 @@ function initializeQuizSubmissionsTable() {
             "url": "app/API/apiQuizSubmissions.php?action=datatable",
             "type": "GET",
             "data": function(d) {
-                d.grading_period = window.currentGradingPeriodFilter;
-                d.status = window.currentStatusFilter;
+                const filters = getCurrentFilters();
+                console.log('Quiz Submissions DataTable - Sending filters:', filters);
+                
+                // Add filter parameters
+                if (filters.grading_period && filters.grading_period !== '') {
+                    d.grading_period = filters.grading_period;
+                }
+                if (filters.status && filters.status !== '') {
+                    d.status = filters.status;
+                }
+                
                 return d;
             },
             "error": function(xhr, error, thrown) {
@@ -60,9 +88,17 @@ function initializeQuizSubmissionsTable() {
             "processing": "Loading quiz submissions...",
             "emptyTable": "No quiz submissions found",
             "zeroRecords": "No matching quiz submissions found"
+        },
+        "initComplete": function(settings, json) {
+            console.log('Quiz Submissions DataTable - Initialization complete');
+            console.log('Quiz Submissions DataTable - Filter elements check:', {
+                gradingPeriodFilter: !!document.getElementById('quizSubmissionsGradingPeriodFilter'),
+                statusFilter: !!document.getElementById('quizSubmissionsStatusFilter')
+            });
         }
     });
 }
+
 
 /**
  * Setup modal events
@@ -82,9 +118,16 @@ function setupModalEvents() {
  * Filter by grading period
  */
 function filterByGradingPeriod() {
-    window.currentGradingPeriodFilter = $('#gradingPeriodFilter').val();
+    const gradingPeriodEl = document.getElementById('quizSubmissionsGradingPeriodFilter');
+    const selectedValue = gradingPeriodEl ? gradingPeriodEl.value : '';
+    console.log('Quiz Submissions - Grading Period Filter Changed:', selectedValue);
+    console.log('Quiz Submissions - Element found:', !!gradingPeriodEl);
+    
     if (window.quizSubmissionsTable) {
-        window.quizSubmissionsTable.ajax.reload();
+        console.log('Quiz Submissions - Reloading table with grading period filter');
+        window.quizSubmissionsTable.ajax.reload(null, false); // false = don't reset paging
+    } else {
+        console.error('Quiz Submissions - Table not found!');
     }
 }
 
@@ -92,9 +135,16 @@ function filterByGradingPeriod() {
  * Filter by status
  */
 function filterByStatus() {
-    window.currentStatusFilter = $('#statusFilter').val();
+    const statusEl = document.getElementById('quizSubmissionsStatusFilter');
+    const selectedValue = statusEl ? statusEl.value : '';
+    console.log('Quiz Submissions - Status Filter Changed:', selectedValue);
+    console.log('Quiz Submissions - Element found:', !!statusEl);
+    
     if (window.quizSubmissionsTable) {
-        window.quizSubmissionsTable.ajax.reload();
+        console.log('Quiz Submissions - Reloading table with status filter');
+        window.quizSubmissionsTable.ajax.reload(null, false); // false = don't reset paging
+    } else {
+        console.error('Quiz Submissions - Table not found!');
     }
 }
 
@@ -384,7 +434,9 @@ function submitQuizGrade() {
                 timer: 1500
             }).then(() => {
                 $('#gradeQuizSubmissionModal').modal('hide');
-                window.quizSubmissionsTable.ajax.reload();
+                if (window.quizSubmissionsTable) {
+                    window.quizSubmissionsTable.ajax.reload();
+                }
             });
         } else {
             Swal.fire({
@@ -518,6 +570,60 @@ function formatDuration(seconds) {
     } else {
         return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
+}
+
+/**
+ * Test filters function
+ */
+function testFilters() {
+    console.log('=== QUIZ SUBMISSIONS FILTER DEBUG ===');
+    
+    // Check DOM elements
+    const gradingPeriodEl = document.getElementById('gradingPeriodFilter');
+    const statusEl = document.getElementById('statusFilter');
+    const tableWrapper = document.getElementById('quizSubmissionsTable_wrapper');
+    
+    console.log('DOM Elements Check:', {
+        gradingPeriodFilter: !!gradingPeriodEl,
+        statusFilter: !!statusEl,
+        tableWrapper: !!tableWrapper,
+        gradingPeriodValue: gradingPeriodEl ? gradingPeriodEl.value : 'ELEMENT NOT FOUND',
+        statusValue: statusEl ? statusEl.value : 'ELEMENT NOT FOUND'
+    });
+    
+    if (gradingPeriodEl) {
+        console.log('Grading Period Element Details:', {
+            id: gradingPeriodEl.id,
+            value: gradingPeriodEl.value,
+            parentElement: gradingPeriodEl.parentElement?.className
+        });
+    }
+    
+    if (statusEl) {
+        console.log('Status Element Details:', {
+            id: statusEl.id,
+            value: statusEl.value,
+            parentElement: statusEl.parentElement?.className
+        });
+    }
+    
+    const filters = getCurrentFilters();
+    console.log('Current filter values:', filters);
+    
+    // Test API directly
+    const testUrl = `app/API/apiQuizSubmissions.php?action=datatable&draw=999&start=0&length=10&grading_period=${filters.grading_period}&status=${filters.status}`;
+    console.log('Test URL:', testUrl);
+    
+    fetch(testUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log('API Response:', data);
+            alert(`API Test Results:\nTotal Records: ${data.recordsTotal}\nFiltered Records: ${data.recordsFiltered}\nData Count: ${data.data.length}\n\nCheck console for full response.`);
+        })
+        .catch(error => {
+            console.error('API Test Error:', error);
+            alert('API Test Failed - Check console for details');
+        });
 }
 
 /**

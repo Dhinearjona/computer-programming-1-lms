@@ -4,13 +4,12 @@
 
 // Global variables - use window object to avoid redeclaration
 window.examSubmissionsTable = window.examSubmissionsTable || null;
-window.currentExamGradingPeriodFilter = window.currentExamGradingPeriodFilter || '';
-window.currentExamStatusFilter = window.currentExamStatusFilter || '';
 
 $(document).ready(function() {
     initializeExamSubmissionsTable();
     setupExamModalEvents();
 });
+
 
 /**
  * Initialize Exam Submissions DataTable
@@ -28,8 +27,25 @@ function initializeExamSubmissionsTable() {
             "url": "app/API/apiExamSubmissions.php?action=datatable",
             "type": "GET",
             "data": function(d) {
-                d.grading_period = window.currentExamGradingPeriodFilter;
-                d.status = window.currentExamStatusFilter;
+                const gradingPeriodEl = document.getElementById('examSubmissionsGradingPeriodFilter');
+                const statusEl = document.getElementById('examSubmissionsStatusFilter');
+                const gradingPeriod = gradingPeriodEl ? gradingPeriodEl.value : '';
+                const status = statusEl ? statusEl.value : '';
+                
+                console.log('Exam Submissions DataTable - Sending filters:', {
+                    grading_period: gradingPeriod,
+                    status: status,
+                    gradingPeriodElementFound: !!gradingPeriodEl,
+                    statusElementFound: !!statusEl
+                });
+                
+                if (gradingPeriod && gradingPeriod !== '') {
+                    d.grading_period = gradingPeriod;
+                }
+                if (status && status !== '') {
+                    d.status = status;
+                }
+                
                 return d;
             },
             "error": function(xhr, error, thrown) {
@@ -81,9 +97,16 @@ function setupExamModalEvents() {
  * Filter by grading period
  */
 function filterByGradingPeriod() {
-    window.currentExamGradingPeriodFilter = $('#gradingPeriodFilter').val();
+    const gradingPeriodEl = document.getElementById('examSubmissionsGradingPeriodFilter');
+    const selectedValue = gradingPeriodEl ? gradingPeriodEl.value : '';
+    console.log('Exam Submissions - Grading Period Filter Changed:', selectedValue);
+    console.log('Exam Submissions - Element found:', !!gradingPeriodEl);
+    
     if (window.examSubmissionsTable) {
-        window.examSubmissionsTable.ajax.reload();
+        console.log('Exam Submissions - Reloading table with grading period filter');
+        window.examSubmissionsTable.ajax.reload(null, false);
+    } else {
+        console.error('Exam Submissions - Table not found!');
     }
 }
 
@@ -91,9 +114,16 @@ function filterByGradingPeriod() {
  * Filter by status
  */
 function filterByStatus() {
-    window.currentExamStatusFilter = $('#statusFilter').val();
+    const statusEl = document.getElementById('examSubmissionsStatusFilter');
+    const selectedValue = statusEl ? statusEl.value : '';
+    console.log('Exam Submissions - Status Filter Changed:', selectedValue);
+    console.log('Exam Submissions - Element found:', !!statusEl);
+    
     if (window.examSubmissionsTable) {
-        window.examSubmissionsTable.ajax.reload();
+        console.log('Exam Submissions - Reloading table with status filter');
+        window.examSubmissionsTable.ajax.reload(null, false);
+    } else {
+        console.error('Exam Submissions - Table not found!');
     }
 }
 
@@ -451,6 +481,60 @@ function formatDuration(seconds) {
     } else {
         return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
+}
+
+/**
+ * Test exam filters function
+ */
+function testExamFilters() {
+    console.log('=== EXAM SUBMISSIONS FILTER DEBUG ===');
+    
+    // Check DOM elements
+    const gradingPeriodEl = document.getElementById('examSubmissionsGradingPeriodFilter');
+    const statusEl = document.getElementById('examSubmissionsStatusFilter');
+    const tableWrapper = document.getElementById('examSubmissionsTable_wrapper');
+    
+    console.log('DOM Elements Check:', {
+        gradingPeriodFilter: !!gradingPeriodEl,
+        statusFilter: !!statusEl,
+        tableWrapper: !!tableWrapper,
+        gradingPeriodValue: gradingPeriodEl ? gradingPeriodEl.value : 'ELEMENT NOT FOUND',
+        statusValue: statusEl ? statusEl.value : 'ELEMENT NOT FOUND'
+    });
+    
+    if (gradingPeriodEl) {
+        console.log('Grading Period Element Details:', {
+            id: gradingPeriodEl.id,
+            value: gradingPeriodEl.value,
+            parentElement: gradingPeriodEl.parentElement?.className
+        });
+    }
+    
+    if (statusEl) {
+        console.log('Status Element Details:', {
+            id: statusEl.id,
+            value: statusEl.value,
+            parentElement: statusEl.parentElement?.className
+        });
+    }
+    
+    const gradingPeriod = gradingPeriodEl ? gradingPeriodEl.value : '';
+    const status = statusEl ? statusEl.value : '';
+    
+    // Test API directly
+    const testUrl = `app/API/apiExamSubmissions.php?action=datatable&draw=999&start=0&length=10&grading_period=${gradingPeriod}&status=${status}`;
+    console.log('Test URL:', testUrl);
+    
+    fetch(testUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log('API Response:', data);
+            alert(`API Test Results:\nTotal Records: ${data.recordsTotal}\nFiltered Records: ${data.recordsFiltered}\nData Count: ${data.data.length}\n\nCheck console for full response.`);
+        })
+        .catch(error => {
+            console.error('API Test Error:', error);
+            alert('API Test Failed - Check console for details');
+        });
 }
 
 /**

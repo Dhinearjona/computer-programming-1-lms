@@ -65,12 +65,20 @@ require_once __DIR__ . '/components/sideNav.php';
                                 <?php endif; ?>
                             </h5>
                             <div class="d-flex gap-2 align-items-center">
-                                <select class="form-select" id="gradingPeriodFilter" style="width: auto;" onchange="filterByGradingPeriod()">
+                                <select class="form-select" id="teacherActivitiesGradingPeriodFilter" style="width: auto;" onchange="filterByGradingPeriod()">
                                     <option value="">All Grading Periods</option>
                                     <option value="prelim">Prelim</option>
                                     <option value="midterm">Midterm</option>
                                     <option value="finals">Finals</option>
                                 </select>
+                                <select class="form-select" id="teacherActivitiesStatusFilter" style="width: auto;" onchange="filterByStatus()">
+                                    <option value="">All Status</option>
+                                    <option value="submitted">Submitted</option>
+                                    <option value="unsubmitted">Unsubmitted</option>
+                                </select>
+                                <button type="button" class="btn btn-outline-info" onclick="testTeacherActivityFilters()" title="Test Filters">
+                                    <i class="bi bi-bug"></i> Test
+                                </button>
                                 <?php if (Permission::canManageActivities()): ?>
                                 <button type="button" class="btn btn-outline-success" onclick="exportSubmissionsData()"
                                     title="Export Data">

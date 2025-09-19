@@ -53,7 +53,7 @@ try {
                 
                 $orderBy = $columns[$orderColumn] ?? 'ea.completed_at';
                 
-                // Base query
+                // Base query - Note: exam_attempts.student_id references users.id directly (inconsistent with other tables)
                 $baseQuery = "
                     FROM exam_attempts ea
                     INNER JOIN exams e ON ea.exam_id = e.id
@@ -69,14 +69,14 @@ try {
                 
                 // Add grading period filter
                 $gradingPeriodFilter = $_GET['grading_period'] ?? '';
-                if (!empty($gradingPeriodFilter)) {
+                if (!empty($gradingPeriodFilter) && $gradingPeriodFilter !== 'all' && $gradingPeriodFilter !== '') {
                     $whereClause .= " AND gp.name = ?";
                     $params[] = $gradingPeriodFilter;
                 }
                 
                 // Add status filter
                 $statusFilter = $_GET['status'] ?? '';
-                if (!empty($statusFilter)) {
+                if (!empty($statusFilter) && $statusFilter !== 'all' && $statusFilter !== '') {
                     if ($statusFilter === 'completed') {
                         $whereClause .= " AND ea.completed_at IS NOT NULL";
                     } elseif ($statusFilter === 'in_progress') {
@@ -107,12 +107,12 @@ try {
                 $totalCountParams = [];
                 
                 // Add same filters as main query (except search)
-                if (!empty($gradingPeriodFilter)) {
+                if (!empty($gradingPeriodFilter) && $gradingPeriodFilter !== 'all' && $gradingPeriodFilter !== '') {
                     $totalCountWhereClause .= " AND gp.name = ?";
                     $totalCountParams[] = $gradingPeriodFilter;
                 }
                 
-                if (!empty($statusFilter)) {
+                if (!empty($statusFilter) && $statusFilter !== 'all' && $statusFilter !== '') {
                     if ($statusFilter === 'completed') {
                         $totalCountWhereClause .= " AND ea.completed_at IS NOT NULL";
                     } elseif ($statusFilter === 'in_progress') {

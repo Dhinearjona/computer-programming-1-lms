@@ -38,15 +38,16 @@ require_once __DIR__ . '/components/sideNav.php';
     <div class="pagetitle">
         <h1>
             <?php if (Permission::isAdmin()): ?>
-            Student Exam Submissions Management
+            Midterm Exam Submissions Management
             <?php elseif (Permission::isTeacher()): ?>
-            My Students' Exam Submissions
+            My Students' Midterm Exam Submissions
             <?php endif; ?>
         </h1>
         <nav>
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index.php">Home</a></li>
-                <li class="breadcrumb-item active">Exam Submissions</li>
+                <li class="breadcrumb-item"><a href="exam-submissions.php">Exam Submissions</a></li>
+                <li class="breadcrumb-item active">Midterm Period</li>
             </ol>
         </nav>
     </div>
@@ -59,24 +60,18 @@ require_once __DIR__ . '/components/sideNav.php';
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="card-title">
                                 <?php if (Permission::isAdmin()): ?>
-                                All Student Exam Submissions
+                                Midterm Period Exam Submissions
                                 <?php elseif (Permission::isTeacher()): ?>
-                                My Students' Exam Submissions
+                                My Students' Midterm Exam Submissions
                                 <?php endif; ?>
                             </h5>
                             <div class="d-flex gap-2 align-items-center">
-                                <select class="form-select" id="examSubmissionsGradingPeriodFilter" style="width: auto;" onchange="filterByGradingPeriod()">
-                                    <option value="">All Grading Periods</option>
-                                    <option value="prelim">Prelim</option>
-                                    <option value="midterm">Midterm</option>
-                                    <option value="finals">Finals</option>
-                                </select>
-                                <select class="form-select" id="examSubmissionsStatusFilter" style="width: auto;" onchange="filterByStatus()">
+                                <select class="form-select" id="midtermExamStatusFilter" style="width: auto;" onchange="filterByStatus()">
                                     <option value="">All Status</option>
                                     <option value="completed">Completed</option>
                                     <option value="in_progress">In Progress</option>
                                 </select>
-                                <button type="button" class="btn btn-outline-info" onclick="testExamFilters()" title="Test Filters">
+                                <button type="button" class="btn btn-outline-info" onclick="testMidtermExamFilters()" title="Test Filters">
                                     <i class="bi bi-bug"></i> Test
                                 </button>
                                 <?php if (Permission::canManageQuizzes()): ?>
@@ -90,13 +85,12 @@ require_once __DIR__ . '/components/sideNav.php';
 
                         <!-- DataTable -->
                         <div class="table-responsive">
-                            <table class="table table-striped" id="examSubmissionsTable">
+                            <table class="table table-striped" id="midtermExamSubmissionsTable">
                                 <thead>
                                     <tr>
                                         <th>Student Name</th>
                                         <th>Exam Title</th>
                                         <th>Subject</th>
-                                        <th>Grading Period</th>
                                         <th>Score</th>
                                         <th>Status</th>
                                         <th>Submitted At</th>
@@ -221,30 +215,7 @@ require_once __DIR__ . '/components/sideNav.php';
     </div>
 </div>
 
-<!-- Vendor JS Files -->
-<script src="assets/vendor/apexcharts/apexcharts.min.js"></script>
-<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="assets/vendor/chart.js/chart.umd.js"></script>
-<script src="assets/vendor/echarts/echarts.min.js"></script>
-<script src="assets/vendor/simple-datatables/simple-datatables.js"></script>
-<script src="assets/vendor/tinymce/tinymce.min.js"></script>
-<script src="assets/vendor/php-email-form/validate.js"></script>
-
-<!-- Template Main JS File -->
-<script src="assets/js/main.js"></script>
-
-<!-- jQuery -->
-<script src="assets/jquery/jquery-3.7.1.min.js"></script>
-
-<!-- DataTables JS -->
-<script src="assets/js/dataTables/dataTables.js"></script>
-<script src="assets/js/dataTables/dataTables.bootstrap5.js"></script>
-
-<!-- SweetAlert2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-<!-- Exam Submissions DataTables JS -->
-<script src="assets/js/dataTables/examSubmissionsDataTables.js"></script>
+<?php require_once __DIR__ . '/components/footer.php'; ?>
 
 <!-- Pass permissions to JavaScript -->
 <script>
@@ -253,9 +224,242 @@ require_once __DIR__ . '/components/sideNav.php';
     window.isAdmin = <?php echo Permission::isAdmin() ? 'true' : 'false'; ?>;
     window.isTeacher = <?php echo Permission::isTeacher() ? 'true' : 'false'; ?>;
     window.userId = <?php echo $user['id']; ?>;
+    window.gradingPeriod = 'midterm'; // Set the grading period for this page
 </script>
 
-<?php require_once __DIR__ . '/components/footer.php'; ?>
+<!-- Custom JavaScript for Midterm Exam Submissions -->
+<script>
+// Global variables
+var midtermExamSubmissionsTable;
+var currentSubmissionId = null;
+
+$(document).ready(function () {
+    initializeMidtermExamSubmissionsTable();
+    setupModalEvents();
+});
+
+/**
+ * Initialize Midterm Exam Submissions DataTable
+ */
+function initializeMidtermExamSubmissionsTable() {
+    midtermExamSubmissionsTable = $("#midtermExamSubmissionsTable").DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: "app/API/apiExamSubmissions.php?action=datatable",
+            type: "GET",
+            data: function(d) {
+                const statusEl = document.getElementById('midtermExamStatusFilter');
+                const status = statusEl ? statusEl.value : '';
+                
+                console.log('Midterm Exam Submissions DataTable - Sending filters:', {
+                    grading_period: 'midterm',
+                    status: status
+                });
+                
+                // Always filter by midterm period
+                d.grading_period = 'midterm';
+                
+                if (status && status !== '') {
+                    d.status = status;
+                }
+                
+                return d;
+            },
+            error: function (xhr, error, thrown) {
+                console.error("DataTables error:", error);
+                console.error("XHR:", xhr);
+                console.error("Response:", xhr.responseText);
+                Swal.fire({
+                    icon: "error",
+                    title: "Error!",
+                    text: "Failed to load exam submissions data: " + error,
+                });
+            },
+        },
+        "columns": [
+            { 
+                "data": "student_name", 
+                "width": "25%",
+                "render": function(data, type, row) {
+                    return `<strong>${data}</strong>`;
+                }
+            },
+            { 
+                "data": "exam_title", 
+                "width": "25%",
+                "render": function(data, type, row) {
+                    return data || 'N/A';
+                }
+            },
+            { 
+                "data": "subject_name", 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    return data ? `<span class="badge bg-primary">${data}</span>` : 'N/A';
+                }
+            },
+            { 
+                "data": "score", 
+                "width": "10%",
+                "render": function(data, type, row) {
+                    if (data && data !== 'Not Graded') {
+                        return `<span class="badge bg-success">${data}</span>`;
+                    }
+                    return '<span class="badge bg-secondary">Not Graded</span>';
+                }
+            },
+            { 
+                "data": "status", 
+                "width": "10%",
+                "render": function(data, type, row) {
+                    let badgeClass = '';
+                    let badgeText = '';
+                    
+                    switch(data) {
+                        case 'completed':
+                            badgeClass = 'badge bg-success';
+                            badgeText = 'Completed';
+                            break;
+                        case 'in_progress':
+                            badgeClass = 'badge bg-warning';
+                            badgeText = 'In Progress';
+                            break;
+                        default:
+                            badgeClass = 'badge bg-secondary';
+                            badgeText = data || 'Unknown';
+                    }
+                    
+                    return `<span class="${badgeClass}">${badgeText}</span>`;
+                }
+            },
+            { 
+                "data": "submitted_at", 
+                "width": "15%",
+                "render": function(data, type, row) {
+                    if (data && data !== '0000-00-00 00:00:00') {
+                        return new Date(data).toLocaleString();
+                    }
+                    return 'N/A';
+                }
+            },
+            { 
+                "data": "actions", 
+                "orderable": false,
+                "width": "10%",
+                "render": function(data, type, row) {
+                    let actions = '<div class="btn-group gap-1" role="group">';
+                    
+                    // View Details button (always available)
+                    actions += `
+                        <button class="btn btn-outline-primary" onclick="displayExamSubmissionDetails(${data})" title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    `;
+                    
+                    // Grade button (for admin/teacher)
+                    if (window.canManageQuizzes) {
+                        actions += `
+                            <button class="btn btn-outline-success" onclick="populateGradeExamForm(${data})" title="Grade Submission">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                        `;
+                    }
+                    
+                    actions += '</div>';
+                    return actions;
+                }
+            }
+        ],
+        "order": [[5, "desc"]],
+        "pageLength": 10,
+        "responsive": true,
+        "language": {
+            "processing": "Loading midterm exam submissions...",
+            "emptyTable": "No midterm exam submissions found",
+            "zeroRecords": "No matching midterm exam submissions found"
+        }
+    });
+}
+
+/**
+ * Filter by status
+ */
+function filterByStatus() {
+    const statusEl = document.getElementById('midtermExamStatusFilter');
+    const selectedValue = statusEl ? statusEl.value : '';
+    console.log('Midterm Exam Submissions - Status Filter Changed:', selectedValue);
+    
+    if (midtermExamSubmissionsTable) {
+        midtermExamSubmissionsTable.ajax.reload();
+    }
+}
+
+/**
+ * Test midterm exam filters function
+ */
+function testMidtermExamFilters() {
+    console.log('=== MIDTERM EXAM SUBMISSIONS FILTER DEBUG ===');
+    
+    const statusEl = document.getElementById('midtermExamStatusFilter');
+    
+    console.log('DOM Elements Check:', {
+        statusFilter: !!statusEl,
+        statusValue: statusEl ? statusEl.value : 'ELEMENT NOT FOUND'
+    });
+    
+    const status = statusEl ? statusEl.value : '';
+    
+    // Test API directly
+    const testUrl = `app/API/apiExamSubmissions.php?action=datatable&draw=999&start=0&length=10&grading_period=midterm&status=${status}`;
+    console.log('Test URL:', testUrl);
+    
+    fetch(testUrl)
+        .then(response => response.json())
+        .then(data => {
+            console.log('API Response:', data);
+            alert(`Midterm Exam API Test Results:\nTotal Records: ${data.recordsTotal}\nFiltered Records: ${data.recordsFiltered}\nData Count: ${data.data.length}\n\nCheck console for full response.`);
+        })
+        .catch(error => {
+            console.error('API Test Error:', error);
+            alert('API Test Failed - Check console for details');
+        });
+}
+
+// Reuse existing functions from exam submissions
+function displayExamSubmissionDetails(id) {
+    // Implementation would be similar to exam-submissions.php
+    console.log('Display exam submission details:', id);
+}
+
+function populateGradeExamForm(id) {
+    // Implementation would be similar to exam-submissions.php  
+    console.log('Populate grade exam form:', id);
+}
+
+function submitExamGrade() {
+    // Implementation would be similar to exam-submissions.php
+    console.log('Submit exam grade');
+}
+
+function setupModalEvents() {
+    // Setup modal events similar to exam-submissions.php
+}
+
+function exportExamSubmissionsData() {
+    // Export functionality
+    Swal.fire({
+        icon: 'info',
+        title: 'Coming Soon!',
+        text: 'Export functionality will be available soon.'
+    });
+}
+
+function printExamSubmission() {
+    // Print functionality
+    window.print();
+}
+</script>
 </body>
 
 </html>

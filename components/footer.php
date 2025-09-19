@@ -19,27 +19,27 @@
 <script src="assets/js/utils/helpers.js"></script>
 
 <!-- DataTables -->
-<script src="assets/js/dataTables/dataTables.js"></script>
-<script src="assets/js/dataTables/dataTables.bootstrap5.js"></script>
-<script src="assets/js/dataTables/datatables-common.js"></script>
-<script src="assets/js/dataTables/activitiesDataTables.js"></script>
-<script src="assets/js/dataTables/quizzesDataTables.js"></script>
-<script src="assets/js/dataTables/studentsDataTables.js"></script>
-<script src="assets/js/dataTables/gradesDataTables.js"></script>
-<script src="assets/js/dataTables/announcementsDataTables.js"></script>
-<script src="assets/js/dataTables/interventionsDataTables.js"></script>
-<script src="assets/js/dataTables/teachersDataTables.js"></script>
-<script src="assets/js/dataTables/lessonsDataTables.js"></script>
-<script src="assets/js/dataTables/myActivitiesDataTables.js"></script>
-<script src="assets/js/dataTables/quizSubmissionsDataTables.js"></script>
-<script src="assets/js/dataTables/examSubmissionsDataTables.js"></script>
-<script src="assets/js/dataTables/myQuizzesDataTables.js"></script>
-<script src="assets/js/dataTables/gradingPeriodsDataTables.js"></script>
-<script src="assets/js/dataTables/semestersDataTables.js"></script>
-<script src="assets/js/dataTables/subjectsDataTables.js"></script>
+<script src="assets/js/dataTables/dataTables.js" defer></script>
+<script src="assets/js/dataTables/dataTables.bootstrap5.js" defer></script>
+<script src="assets/js/dataTables/datatables-common.js" defer></script>
+<script src="assets/js/dataTables/activitiesDataTables.js" defer></script>
+<script src="assets/js/dataTables/quizzesDataTables.js" defer></script>
+<script src="assets/js/dataTables/studentsDataTables.js" defer></script>
+<script src="assets/js/dataTables/gradesDataTables.js" defer></script>
+<script src="assets/js/dataTables/announcementsDataTables.js" defer></script>
+<script src="assets/js/dataTables/interventionsDataTables.js" defer></script>
+<script src="assets/js/dataTables/teachersDataTables.js" defer></script>
+<script src="assets/js/dataTables/lessonsDataTables.js" defer></script>
+<script src="assets/js/dataTables/myActivitiesDataTables.js" defer></script>
+<script src="assets/js/dataTables/quizSubmissionsDataTables.js" defer></script>
+<script src="assets/js/dataTables/examSubmissionsDataTables.js" defer></script>
+<script src="assets/js/dataTables/myQuizzesDataTables.js" defer></script>
+<script src="assets/js/dataTables/gradingPeriodsDataTables.js" defer></script>
+<script src="assets/js/dataTables/semestersDataTables.js" defer></script>
+<script src="assets/js/dataTables/subjectsDataTables.js" defer></script>
 
 <!-- Main Template -->
-<script src="assets/js/main.js"></script>
+<script src="assets/js/main.js" defer></script>
 
 <script>
     $(document).ready(function() {
